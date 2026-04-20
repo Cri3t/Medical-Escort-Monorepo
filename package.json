@@ -1,0 +1,16 @@
+{
+  "name": "medical-escort-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "db:generate": "dotenv -e .env -- pnpm --filter @medical-escort/database run db:generate",
+    "db:push": "dotenv -e .env -- pnpm --filter @medical-escort/database run db:push",
+    "db:migrate": "dotenv -e .env -- pnpm --filter @medical-escort/database run db:migrate",
+    "db:studio": "dotenv -e .env -- pnpm --filter @medical-escort/database run db:studio",
+    "dev:backend": "pnpm --filter @medical-escort/backend run start:dev"
+  },
+  "devDependencies": {
+    "dotenv-cli": "^11.0.0"
+  }
+}
