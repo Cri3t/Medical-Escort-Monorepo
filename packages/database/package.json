@@ -2,8 +2,16 @@
   "name": "@medical-escort/database",
   "version": "0.1.0",
   "private": true,
-  "main": "src/index.ts",
-  "types": "src/index.ts",
+  "main": "src/generated/client/index.js",
+  "types": "src/generated/client/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/generated/client/index.d.ts",
+      "require": "./src/generated/client/index.js",
+      "import": "./src/generated/client/index.js",
+      "default": "./src/generated/client/index.js"
+    }
+  },
   "scripts": {
     "db:generate": "prisma generate",
     "db:push": "prisma db push",

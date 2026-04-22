@@ -4,64 +4,58 @@ generator client {
   output   = "../src/generated/client"
 }
 
-/// 数据源配置：当前阶段使用 MySQL 8.0
+/// 数据源配置：MySQL 8.0
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
-/// 用户角色枚举
-/// - USER: 普通用户/患者/家属
+/// 用户角色
+/// - USER: 普通用户
 /// - ESCORT: 陪诊员
 enum UserRole {
   USER
   ESCORT
 }
 
-/// 订单状态枚举
+/// 订单状态
 /// - PENDING_PAYMENT: 待支付
 /// - PENDING_ACCEPT: 待接单
 /// - IN_SERVICE: 服务中
 /// - COMPLETED: 已完成
 /// - CANCELLED: 已取消
-/// - REFUNDING: 退款中
 enum OrderStatus {
   PENDING_PAYMENT
   PENDING_ACCEPT
   IN_SERVICE
   COMPLETED
   CANCELLED
-  REFUNDING
 }
 
-/// 系统用户表
-/// 用于存储普通用户和陪诊员的统一账号信息
+/// 用户表
 model User {
-  /// 主键 ID，使用 CUID 便于前后端分布式场景
+  /// 主键 ID，CUID 字符串
   id String @id @default(cuid()) @db.VarChar(36)
 
-  /// 手机号，作为核心登录标识之一
+  /// 手机号
   phone String @unique @db.VarChar(20)
 
-  /// 用户昵称
+  /// 昵称
   nickname String? @db.VarChar(50)
 
-  /// 真实姓名
-  realName String? @db.VarChar(50)
+  /// 登录密码哈希，不存储明文密码
+  password String @db.VarChar(255)
 
-  /// 用户角色：普通用户或陪诊员
+  /// 用户角色
   role UserRole @default(USER)
 
-  /// 账号是否启用
-  isActive Boolean @default(true)
-
-  /// 用户创建的订单列表
+  /// 用户创建的订单
   createdOrders Order[] @relation("CustomerOrders")
 
-  /// 作为陪诊员承接的订单列表
+  /// 陪诊员接单列表
   acceptedOrders Order[] @relation("EscortOrders")
 
-  /// 陪诊员扩展资料，一对一关系
+  /// 陪诊员资料
   escortProfile EscortProfile?
 
   /// 创建时间
@@ -71,35 +65,21 @@ model User {
   updatedAt DateTime @updatedAt
 
   @@index([role])
-  @@index([isActive])
   @@map("users")
 }
 
 /// 陪诊员资料表
-/// 仅当用户角色为 ESCORT 时才会存在该记录
 model EscortProfile {
   /// 主键 ID
   id String @id @default(cuid()) @db.VarChar(36)
 
-  /// 关联的用户 ID
+  /// 关联用户 ID
   userId String @unique @db.VarChar(36)
 
-  /// 身份证号，可用于实名认证
+  /// 身份证号
   idCardNo String @unique @db.VarChar(32)
 
-  /// 资格证书编号，可为空
-  certificateNo String? @db.VarChar(64)
-
-  /// 擅长领域，例如挂号、取药、住院陪护等
-  specialty String? @db.VarChar(255)
-
-  /// 从业年限
-  serviceYears Int @default(0)
-
-  /// 个人简介
-  bio String? @db.Text
-
-  /// 资质审核是否通过
+  /// 审核通过标志
   isVerified Boolean @default(false)
 
   /// 创建时间
@@ -116,7 +96,6 @@ model EscortProfile {
 }
 
 /// 订单表
-/// 描述用户发起的陪诊服务订单
 model Order {
   /// 主键 ID
   id String @id @default(cuid()) @db.VarChar(36)
@@ -124,31 +103,25 @@ model Order {
   /// 下单用户 ID
   customerId String @db.VarChar(36)
 
-  /// 接单陪诊员 ID，未接单前允许为空
+  /// 接单陪诊员 ID
   escortId String? @db.VarChar(36)
 
-  /// 订单编号，便于外部系统和人工检索
+  /// 订单编号
   orderNo String @unique @db.VarChar(32)
 
-  /// 就诊医院名称
+  /// 医院名称 / 就诊地点
   hospitalName String @db.VarChar(100)
 
-  /// 就诊科室名称
-  departmentName String? @db.VarChar(100)
-
-  /// 服务日期时间
+  /// 服务时间
   serviceAt DateTime
 
-  /// 服务地址或集合地点
-  serviceAddress String? @db.VarChar(255)
-
-  /// 用户备注
+  /// 备注 / 其他诉求
   remark String? @db.Text
 
-  /// 订单金额，保留两位小数
+  /// 订单金额
   amount Decimal @db.Decimal(10, 2)
 
-  /// 当前订单状态
+  /// 订单状态
   status OrderStatus @default(PENDING_PAYMENT)
 
   /// 下单用户

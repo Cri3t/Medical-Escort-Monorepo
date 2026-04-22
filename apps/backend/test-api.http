@@ -1,0 +1,23 @@
+@baseUrl = http://localhost:3000
+@phone = 13900000001
+@password = Test123456
+
+### Request A: Register a new user
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "phone": "{{phone}}",
+  "password": "{{password}}",
+  "nickname": "Auth Test User",
+  "role": "USER"
+}
+
+### Request B: Login with the registered user
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "phone": "{{phone}}",
+  "password": "{{password}}"
+}
