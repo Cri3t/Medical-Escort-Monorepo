@@ -8,7 +8,9 @@
     "db:push": "dotenv -e .env -- pnpm --filter @medical-escort/database run db:push",
     "db:migrate": "dotenv -e .env -- pnpm --filter @medical-escort/database run db:migrate",
     "db:studio": "dotenv -e .env -- pnpm --filter @medical-escort/database run db:studio",
-    "dev:backend": "pnpm --filter @medical-escort/backend run start:dev"
+    "dev:backend": "pnpm --filter @medical-escort/backend run start:dev",
+    "dev:frontend": "pnpm --filter @medical-escort/frontend run dev",
+    "build:frontend": "pnpm --filter @medical-escort/frontend run build"
   },
   "devDependencies": {
     "dotenv-cli": "^11.0.0"

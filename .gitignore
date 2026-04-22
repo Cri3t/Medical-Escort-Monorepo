@@ -7,4 +7,4 @@ coverage
 apps/*/dist
 packages/*/dist
 packages/database/src/generated
-
+.agents
