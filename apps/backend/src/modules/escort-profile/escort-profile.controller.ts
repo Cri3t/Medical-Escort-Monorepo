@@ -35,6 +35,22 @@ export class EscortProfileController {
   }
 
   @ApiOperation({
+    summary: "Get verified public escort profiles",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Success. Returns verified escort profiles without sensitive fields.",
+  })
+  @ApiResponse({
+    status: 401,
+    description: "Unauthorized or login expired.",
+  })
+  @Get("public")
+  getPublicProfiles() {
+    return this.escortProfileService.getPublicProfiles();
+  }
+
+  @ApiOperation({
     summary: "Submit escort identity verification application",
   })
   @ApiResponse({ status: 201, description: "Success." })

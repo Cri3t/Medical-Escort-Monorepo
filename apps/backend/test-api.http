@@ -3,7 +3,7 @@
 @password = Test123456
 
 ### Request A: Register a new user
-POST {{baseUrl}}/auth/register
+POST {{baseUrl}}/api/auth/register
 Content-Type: application/json
 
 {
@@ -14,10 +14,56 @@ Content-Type: application/json
 }
 
 ### Request B: Login with the registered user
-POST {{baseUrl}}/auth/login
+POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 
 {
   "phone": "{{phone}}",
   "password": "{{password}}"
 }
+### ============================================================================
+### 医疗陪诊系统 - 预约与订单模块测试
+### ============================================================================
+
+# 环境变量配置 (请根据你的实际运行端口修改)
+@baseUrl = http://localhost:3000
+# 【必填】请先调用登录接口获取 Token，并粘贴在下方
+@authToken =eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbW9iZTM3cnIwMDAwaWo2d2prd2R3YTh2IiwicGhvbmUiOiIxMzkwMDAwMDAwMSIsInJvbGUiOiJVU0VSIiwiaWF0IjoxNzc2OTQzMTk5LCJleHAiOjE3Nzc1NDc5OTl9.vmsPjghdRpxzZbzTDK_VznozNtPMcvjf8bJx5ZpxFwo 
+
+### ----------------------------------------------------------------------------
+### 1. 陪诊员模块 (患者端浏览)
+### ----------------------------------------------------------------------------
+
+### 1.1 获取公开的可预约陪诊员列表
+# 期望：返回 isVerified 为 true 的陪诊员，且包含 user.nickname，不包含身份证号
+GET {{baseUrl}}/api/escort-profile/public
+Authorization: Bearer {{authToken}}
+
+
+### ----------------------------------------------------------------------------
+### 2. 订单模块 (核心交易链路)
+### ----------------------------------------------------------------------------
+
+# 变量准备 (请将下面这个 ID 替换为 1.1 接口返回的真实陪诊员的 escortId/userId)
+@targetEscortId = cmobddxbu0001ijngu0mx4ckt
+
+### 2.1 患者发起定向预约
+# 期望：生成新的 PENDING_PAYMENT 状态的订单，返回包含 orderNo
+POST {{baseUrl}}/api/orders
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "escortId": "{{targetEscortId}}",
+  "hospitalName": "北京协和医院",
+  "serviceAt": "2026-05-01T08:00:00.000Z",
+  "remark": "患者是70岁老人，腿脚不便，需要轮椅协助",
+  "amount": 150.00
+}
+
+
+### 2.2 查询我的订单 (患者端 / 陪诊员端 通用)
+# 期望(患者Token)：返回自己发起的订单，并在 include 中看到陪诊员昵称
+# 期望(陪诊员Token)：返回派发给自己的订单，并在 include 中看到患者昵称和手机号
+GET {{baseUrl}}/api/orders/my
+Authorization: Bearer {{authToken}}

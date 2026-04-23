@@ -13,6 +13,27 @@ export class EscortProfileService {
     });
   }
 
+  async getPublicProfiles() {
+    return this.prisma.escortProfile.findMany({
+      where: { isVerified: true },
+      select: {
+        id: true,
+        userId: true,
+        isVerified: true,
+        createdAt: true,
+        updatedAt: true,
+        user: {
+          select: {
+            nickname: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
   async apply(userId: string, dto: CreateProfileDto): Promise<EscortProfile> {
     try {
       return await this.prisma.escortProfile.create({

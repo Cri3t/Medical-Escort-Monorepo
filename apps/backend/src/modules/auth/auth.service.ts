@@ -23,7 +23,8 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto): Promise<AuthResult> {
-    this.validatePhoneAndPassword(dto.phone, dto.password);
+    const phone = this.normalizePhone(dto.phone);
+    this.validatePhoneAndPassword(phone, dto.password);
 
     if (dto.role && !Object.values(UserRole).includes(dto.role)) {
       throw new BadRequestException('用户角色不合法');
@@ -32,9 +33,9 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(dto.password, this.passwordSaltRounds);
     const nickname =
       dto.nickname?.trim() ||
-      `用户_${dto.phone.replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2')}`;
+      `用户_${phone.replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2')}`;
     const user = await this.userService.create({
-      phone: dto.phone,
+      phone,
       password: passwordHash,
       nickname,
       role: dto.role,
@@ -47,9 +48,10 @@ export class AuthService {
   }
 
   async login(dto: LoginDto): Promise<AuthResult> {
-    this.validatePhoneAndPassword(dto.phone, dto.password);
+    const phone = this.normalizePhone(dto.phone);
+    this.validatePhoneAndPassword(phone, dto.password);
 
-    const user = await this.userService.findByPhone(dto.phone);
+    const user = await this.userService.findByPhone(phone);
 
     if (!user) {
       throw new UnauthorizedException('手机号或密码错误');
@@ -77,6 +79,10 @@ export class AuthService {
     };
 
     return this.jwtService.signAsync(payload);
+  }
+
+  private normalizePhone(phone?: string): string {
+    return String(phone ?? '').trim();
   }
 
   private validatePhoneAndPassword(phone?: string, password?: string): void {
