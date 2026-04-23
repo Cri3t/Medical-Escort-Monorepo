@@ -30,7 +30,6 @@ const copy = {
   bookingTitle: "Book Escort Service",
   bookingDescription:
     "Submit appointment time, hospital, and service needs. The platform will match you with a suitable escort.",
-  comingSoon: "Coming Soon",
 };
 
 const router = useRouter();
@@ -153,6 +152,10 @@ function goApplyEscort() {
 
   router.push("/profile/apply");
 }
+
+function goBookEscort() {
+  router.push("/book");
+}
 </script>
 
 <template>
@@ -202,10 +205,10 @@ function goApplyEscort() {
           </p>
           <button
             type="button"
-            class="mt-6 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-500"
-            disabled
+            class="mt-6 w-full rounded-lg bg-teal-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-600/20 transition hover:bg-teal-700 focus:outline-none focus:ring-4 focus:ring-teal-200"
+            @click="goBookEscort"
           >
-            {{ copy.comingSoon }}
+            Book Now
           </button>
         </article>
 
