@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRouter } from "vue-router";
+import UserNav from "@/components/UserNav.vue";
 
 interface StoredUser {
-  phone?: string;
   nickname?: string;
+  phone?: string;
   role?: string;
 }
 
@@ -39,7 +40,7 @@ const displayName = computed(() => {
 });
 
 const escortCardTitle = computed(() =>
-  user.value.role === "ESCORT" ? "陪诊员管理后台" : "成为陪诊员",
+  user.value.role === "ESCORT" ? "陪诊员工作台" : "申请成为陪诊员",
 );
 
 function goApplyEscort() {
@@ -51,7 +52,7 @@ function goApplyEscort() {
   <main class="min-h-screen bg-slate-50 text-slate-900">
     <header class="border-b border-slate-200 bg-white">
       <div
-        class="mx-auto flex max-w-6xl items-center justify-between px-4 py-5"
+        class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-5"
       >
         <div>
           <p class="text-sm font-medium text-teal-700">
@@ -60,21 +61,19 @@ function goApplyEscort() {
           <h1
             class="mt-1 text-2xl font-semibold tracking-normal text-slate-950"
           >
-            医疗陪诊系统
+            医疗陪诊服务平台
           </h1>
         </div>
-        <div
-          class="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700"
-        >
-          {{ displayName }}
-        </div>
+        <UserNav :display-name="displayName" :user="user" />
       </div>
     </header>
 
     <section class="mx-auto max-w-6xl px-4 py-10">
       <div class="mb-8">
-        <h2 class="text-xl font-semibold text-slate-950">首页</h2>
-        <p class="mt-2 text-sm text-slate-500">选择你要使用的服务</p>
+        <h2 class="text-xl font-semibold text-slate-950">服务入口</h2>
+        <p class="mt-2 text-sm text-slate-500">
+          根据当前身份选择预约陪诊、申请成为陪诊员或管理服务信息。
+        </p>
       </div>
 
       <div class="grid gap-5 md:grid-cols-2">
@@ -88,7 +87,7 @@ function goApplyEscort() {
           </div>
           <h3 class="text-lg font-semibold text-slate-950">预约陪诊</h3>
           <p class="mt-2 text-sm leading-6 text-slate-500">
-            预约医院陪诊、就医协助等服务。
+            提交就医需求，匹配专业陪诊员协助挂号、候诊、取药与检查流程。
           </p>
           <button
             type="button"
@@ -111,14 +110,14 @@ function goApplyEscort() {
             {{ escortCardTitle }}
           </h3>
           <p class="mt-2 text-sm leading-6 text-slate-500">
-            提交入驻资料，成为平台认证陪诊员。
+            完善资质信息后可承接陪诊订单，管理服务范围、接单状态与个人资料。
           </p>
           <button
             type="button"
             class="mt-6 w-full rounded-lg bg-teal-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-600/20 transition hover:bg-teal-700 focus:outline-none focus:ring-4 focus:ring-teal-200"
             @click="goApplyEscort"
           >
-            进入
+            立即前往
           </button>
         </article>
       </div>
