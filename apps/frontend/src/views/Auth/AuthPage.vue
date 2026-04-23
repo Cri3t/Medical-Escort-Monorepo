@@ -1,14 +1,23 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { useRouter } from "vue-router";
 import request from "../../utils/request";
 
 type AuthMode = "login" | "register";
 
-interface AuthResult {
-  token?: string;
-  accessToken?: string;
+interface AuthUser {
+  id?: string;
+  phone?: string;
+  nickname?: string;
+  role?: string;
 }
 
+interface AuthResult {
+  accessToken: string;
+  user: AuthUser;
+}
+
+const router = useRouter();
 const phonePattern = /^1[3-9]\d{9}$/;
 
 const authMode = ref<AuthMode>("login");
@@ -42,18 +51,16 @@ async function handleLogin() {
   isLoading.value = true;
 
   try {
-    const result = await request.post<unknown, AuthResult>("/auth/login", {
+    const data = await request.post<unknown, AuthResult>("/auth/login", {
       phone: loginForm.value.phone,
       password: loginForm.value.password,
     });
 
-    const token = result.token || result.accessToken;
-
-    if (token) {
-      localStorage.setItem("token", token);
-    }
+    localStorage.setItem("token", data.accessToken);
+    localStorage.setItem("user", JSON.stringify(data.user));
 
     alert("登录成功");
+    router.push("/");
   } finally {
     isLoading.value = false;
   }
@@ -74,14 +81,13 @@ async function handleRegister() {
     });
 
     authMode.value = "login";
+    registerForm.value.phone = "";
+    registerForm.value.password = "";
+    registerForm.value.confirmPassword = "";
     alert("注册成功");
   } finally {
     isLoading.value = false;
   }
-
-  registerForm.value.phone = "";
-  registerForm.value.password = "";
-  registerForm.value.confirmPassword = "";
 }
 </script>
 
