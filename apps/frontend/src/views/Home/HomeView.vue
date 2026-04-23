@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import UserNav from "@/components/UserNav.vue";
+import request from "@/utils/request";
 
 interface StoredUser {
   nickname?: string;
@@ -9,7 +10,32 @@ interface StoredUser {
   role?: string;
 }
 
+interface EscortProfile {
+  id: string;
+  userId: string;
+  idCardNo: string;
+  isVerified: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+type ProfileStatus = "LOADING" | "NOT_APPLIED" | "PENDING" | "APPROVED";
+
+const copy = {
+  userFallback: "User",
+  pageTitle: "Medical Escort Service Dashboard",
+  sectionTitle: "Service Entry",
+  sectionDescription:
+    "Manage your medical escort service workflow, submit onboarding applications, and view available platform features.",
+  bookingTitle: "Book Escort Service",
+  bookingDescription:
+    "Submit appointment time, hospital, and service needs. The platform will match you with a suitable escort.",
+  comingSoon: "Coming Soon",
+};
+
 const router = useRouter();
+const profileStatus = ref<ProfileStatus>("LOADING");
+const profileLoading = ref(true);
 
 const user = computed<StoredUser>(() => {
   const rawUser = localStorage.getItem("user");
@@ -33,17 +59,98 @@ const displayName = computed(() => {
   const phone = user.value.phone;
 
   if (!phone || phone.length < 7) {
-    return "用户";
+    return copy.userFallback;
   }
 
   return `${phone.slice(0, 3)}****${phone.slice(-4)}`;
 });
 
-const escortCardTitle = computed(() =>
-  user.value.role === "ESCORT" ? "陪诊员工作台" : "申请成为陪诊员",
+const escortCardTitle = computed(() => {
+  if (profileLoading.value) {
+    return "Escort Onboarding Status";
+  }
+
+  if (profileStatus.value === "APPROVED" || user.value.role === "ESCORT") {
+    return "Escort Dashboard";
+  }
+
+  if (profileStatus.value === "PENDING") {
+    return "Onboarding Review in Progress...";
+  }
+
+  return "Become an Escort";
+});
+
+const escortCardDescription = computed(() => {
+  if (profileLoading.value) {
+    return "Loading your onboarding application status. Please wait.";
+  }
+
+  if (profileStatus.value === "PENDING") {
+    return "Your escort identity verification has been submitted and is under review.";
+  }
+
+  if (profileStatus.value === "APPROVED" || user.value.role === "ESCORT") {
+    return "Your escort identity has been approved. You can enter the escort dashboard to manage service orders.";
+  }
+
+  return "Submit identity verification to apply as an escort. After approval, you can receive service orders.";
+});
+
+const escortButtonText = computed(() => {
+  if (profileLoading.value) {
+    return "Loading Status...";
+  }
+
+  if (profileStatus.value === "PENDING") {
+    return "Under Review";
+  }
+
+  if (profileStatus.value === "APPROVED" || user.value.role === "ESCORT") {
+    return "Approved";
+  }
+
+  return "Apply Now";
+});
+
+const escortActionDisabled = computed(
+  () =>
+    profileLoading.value ||
+    profileStatus.value === "PENDING" ||
+    profileStatus.value === "APPROVED" ||
+    user.value.role === "ESCORT",
 );
 
+onMounted(() => {
+  void loadMyProfile();
+});
+
+async function loadMyProfile() {
+  profileLoading.value = true;
+
+  try {
+    const profile = await request.get<unknown, EscortProfile | null>(
+      "/escort-profile/my",
+    );
+
+    if (!profile) {
+      profileStatus.value = "NOT_APPLIED";
+      return;
+    }
+
+    profileStatus.value = profile.isVerified ? "APPROVED" : "PENDING";
+  } catch {
+    profileStatus.value = "NOT_APPLIED";
+  } finally {
+    profileLoading.value = false;
+  }
+}
+
 function goApplyEscort() {
+  if (escortActionDisabled.value) {
+    return;
+  }
+
   router.push("/profile/apply");
 }
 </script>
@@ -61,7 +168,7 @@ function goApplyEscort() {
           <h1
             class="mt-1 text-2xl font-semibold tracking-normal text-slate-950"
           >
-            医疗陪诊服务平台
+            {{ copy.pageTitle }}
           </h1>
         </div>
         <UserNav :display-name="displayName" :user="user" />
@@ -70,9 +177,11 @@ function goApplyEscort() {
 
     <section class="mx-auto max-w-6xl px-4 py-10">
       <div class="mb-8">
-        <h2 class="text-xl font-semibold text-slate-950">服务入口</h2>
+        <h2 class="text-xl font-semibold text-slate-950">
+          {{ copy.sectionTitle }}
+        </h2>
         <p class="mt-2 text-sm text-slate-500">
-          根据当前身份选择预约陪诊、申请成为陪诊员或管理服务信息。
+          {{ copy.sectionDescription }}
         </p>
       </div>
 
@@ -85,16 +194,18 @@ function goApplyEscort() {
           >
             +
           </div>
-          <h3 class="text-lg font-semibold text-slate-950">预约陪诊</h3>
+          <h3 class="text-lg font-semibold text-slate-950">
+            {{ copy.bookingTitle }}
+          </h3>
           <p class="mt-2 text-sm leading-6 text-slate-500">
-            提交就医需求，匹配专业陪诊员协助挂号、候诊、取药与检查流程。
+            {{ copy.bookingDescription }}
           </p>
           <button
             type="button"
             class="mt-6 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-500"
             disabled
           >
-            即将开放
+            {{ copy.comingSoon }}
           </button>
         </article>
 
@@ -110,14 +221,20 @@ function goApplyEscort() {
             {{ escortCardTitle }}
           </h3>
           <p class="mt-2 text-sm leading-6 text-slate-500">
-            完善资质信息后可承接陪诊订单，管理服务范围、接单状态与个人资料。
+            {{ escortCardDescription }}
           </p>
           <button
             type="button"
-            class="mt-6 w-full rounded-lg bg-teal-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-600/20 transition hover:bg-teal-700 focus:outline-none focus:ring-4 focus:ring-teal-200"
+            :disabled="escortActionDisabled"
+            class="mt-6 w-full rounded-lg px-4 py-3 text-sm font-semibold transition focus:outline-none focus:ring-4"
+            :class="
+              escortActionDisabled
+                ? 'cursor-not-allowed bg-slate-200 text-slate-500'
+                : 'bg-teal-600 text-white shadow-lg shadow-teal-600/20 hover:bg-teal-700 focus:ring-teal-200'
+            "
             @click="goApplyEscort"
           >
-            立即前往
+            {{ escortButtonText }}
           </button>
         </article>
       </div>

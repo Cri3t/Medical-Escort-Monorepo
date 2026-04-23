@@ -7,6 +7,12 @@ import { CreateProfileDto } from './dto/create-profile.dto';
 export class EscortProfileService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async getMyProfile(userId: string): Promise<EscortProfile | null> {
+    return this.prisma.escortProfile.findUnique({
+      where: { userId },
+    });
+  }
+
   async apply(userId: string, dto: CreateProfileDto): Promise<EscortProfile> {
     try {
       return await this.prisma.escortProfile.create({
@@ -20,7 +26,9 @@ export class EscortProfileService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
-        throw new ConflictException('您已提交过申请或该身份证已被注册');
+        throw new ConflictException(
+          'You have already submitted an application or this ID card has been registered',
+        );
       }
 
       throw error;
