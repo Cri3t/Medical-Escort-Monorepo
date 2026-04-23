@@ -30,10 +30,13 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(dto.password, this.passwordSaltRounds);
+    const nickname =
+      dto.nickname?.trim() ||
+      `用户_${dto.phone.replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2')}`;
     const user = await this.userService.create({
       phone: dto.phone,
       password: passwordHash,
-      nickname: dto.nickname,
+      nickname,
       role: dto.role,
     });
 

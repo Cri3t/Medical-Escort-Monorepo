@@ -12,6 +12,16 @@ const request = axios.create({
   timeout: 10000,
 })
 
+request.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token')
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+
+  return config
+})
+
 request.interceptors.response.use(
   (res) => {
     const body = res.data as ApiResponse

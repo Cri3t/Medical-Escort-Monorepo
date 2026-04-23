@@ -16,9 +16,10 @@ async function bootstrap() {
     .setTitle('医疗陪诊系统 API')
     .setDescription('医疗陪诊后端服务接口文档')
     .setVersion('1.0')
+    .addBearerAuth()
     .build();
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('docs', app, swaggerDocument);
+  SwaggerModule.setup('api-docs', app, swaggerDocument);
 
   await app.listen(process.env.PORT ?? 3000);
 }
