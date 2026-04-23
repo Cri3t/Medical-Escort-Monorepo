@@ -13,6 +13,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { SafeUser } from '../user/types/safe-user.type';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrdersService } from './orders.service';
+import type { OrderListItem } from './types/order-list-item.type';
 
 @ApiBearerAuth()
 @ApiTags('Orders')
@@ -28,7 +29,10 @@ export class OrdersController {
   @Post()
   @Roles(UserRole.USER)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  create(@CurrentUser() user: SafeUser, @Body() dto: CreateOrderDto) {
+  create(
+    @CurrentUser() user: SafeUser,
+    @Body() dto: CreateOrderDto,
+  ): Promise<OrderListItem> {
     return this.ordersService.create(user.id, dto);
   }
 
@@ -36,7 +40,7 @@ export class OrdersController {
   @ApiResponse({ status: 200, description: 'Success.' })
   @ApiResponse({ status: 401, description: 'Unauthorized or login expired.' })
   @Get('my')
-  getMyOrders(@CurrentUser() user: SafeUser) {
+  getMyOrders(@CurrentUser() user: SafeUser): Promise<OrderListItem[]> {
     return this.ordersService.getMyOrders(user);
   }
 }
