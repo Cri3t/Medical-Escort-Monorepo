@@ -2,6 +2,7 @@
 import AMapLoader from "@amap/amap-jsapi-loader";
 import { MapPin, Search, X } from "lucide-vue-next";
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import { getPublicProfiles } from "@/api/escort";
 import type { PublicEscortProfile } from "@/api/escort";
 import { createOrder } from "@/api/order";
@@ -120,9 +121,9 @@ interface AMapLoaderResult {
 const AMAP_KEY = import.meta.env.VITE_AMAP_KEY;
 const AMAP_SECURITY_CODE = import.meta.env.VITE_AMAP_SECURITY_CODE;
 const DEFAULT_MAP_CENTER: AMapPosition = [116.397428, 39.90923];
-const HOSPITAL_SEARCH_KEYWORD = "综合医院";
-const FALLBACK_SEARCH_KEYWORD = "医院";
-const MEDICAL_SEARCH_TYPE = "医疗保健服务";
+const HOSPITAL_SEARCH_KEYWORD = "General Hospital";
+const FALLBACK_SEARCH_KEYWORD = "Hospital";
+const MEDICAL_SEARCH_TYPE = "Medical and Healthcare Services";
 
 const initialForm = (): OrderForm => ({
   hospitalName: "",
@@ -134,6 +135,7 @@ const initialForm = (): OrderForm => ({
 const escorts = ref<PublicEscortProfile[]>([]);
 const loading = ref(false);
 const submitLoading = ref(false);
+const router = useRouter();
 const selectedEscort = ref<PublicEscortProfile | null>(null);
 const form = ref<OrderForm>(initialForm());
 
@@ -469,8 +471,7 @@ async function handleSubmit() {
     });
 
     alert("Booking created successfully");
-    selectedEscort.value = null;
-    resetForm();
+    await router.push("/orders");
   } finally {
     submitLoading.value = false;
   }
@@ -676,7 +677,7 @@ async function handleSubmit() {
               v-if="mapLoading"
               class="absolute inset-0 flex items-center justify-center bg-white/80 text-sm font-medium text-slate-700"
             >
-              地图加载中...
+              Loading map...
             </div>
           </div>
 

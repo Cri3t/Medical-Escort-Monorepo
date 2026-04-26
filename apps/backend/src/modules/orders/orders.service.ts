@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { OrderStatus, UserRole } from '@medical-escort/database';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SafeUser } from '../user/types/safe-user.type';
@@ -81,6 +86,69 @@ export class OrdersService {
     return [];
   }
 
+  async payOrder(userId: string, orderId: string): Promise<OrderListItem> {
+    const order = await this.findOrderOrThrow(orderId);
+
+    if (order.customerId !== userId) {
+      throw new ForbiddenException('无权操作此订单');
+    }
+
+    if (order.status !== OrderStatus.PENDING_PAYMENT) {
+      throw new BadRequestException('订单当前状态无法支付');
+    }
+
+    const updatedOrder = await this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        status: OrderStatus.PENDING_ACCEPT,
+      },
+    });
+
+    return this.toOrderListItem(updatedOrder);
+  }
+
+  async acceptOrder(escortId: string, orderId: string): Promise<OrderListItem> {
+    const order = await this.findOrderOrThrow(orderId);
+
+    if (order.escortId !== escortId) {
+      throw new ForbiddenException('无权操作此订单');
+    }
+
+    if (order.status !== OrderStatus.PENDING_ACCEPT) {
+      throw new BadRequestException('订单当前状态无法接单');
+    }
+
+    const updatedOrder = await this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        status: OrderStatus.IN_SERVICE,
+      },
+    });
+
+    return this.toOrderListItem(updatedOrder);
+  }
+
+  async completeOrder(escortId: string, orderId: string): Promise<OrderListItem> {
+    const order = await this.findOrderOrThrow(orderId);
+
+    if (order.escortId !== escortId) {
+      throw new ForbiddenException('无权操作此订单');
+    }
+
+    if (order.status !== OrderStatus.IN_SERVICE) {
+      throw new BadRequestException('订单当前状态无法完成');
+    }
+
+    const updatedOrder = await this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        status: OrderStatus.COMPLETED,
+      },
+    });
+
+    return this.toOrderListItem(updatedOrder);
+  }
+
   private toOrderListItem(order: {
     id: string;
     customerId: string;
@@ -110,6 +178,18 @@ export class OrdersService {
     }
 
     return orderNo;
+  }
+
+  private async findOrderOrThrow(orderId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+    });
+
+    if (!order) {
+      throw new NotFoundException('订单不存在');
+    }
+
+    return order;
   }
 
   private createOrderNo(): string {

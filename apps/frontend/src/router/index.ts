@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import AuthPage from "../views/Auth/AuthPage.vue";
 import BookEscort from "../views/Book/BookEscort.vue";
 import HomeView from "../views/Home/HomeView.vue";
+import OrderList from "../views/Order/OrderList.vue";
 import ApplyEscort from "../views/Profile/ApplyEscort.vue";
 
 const router = createRouter({
@@ -32,6 +33,14 @@ const router = createRouter({
       path: "/book",
       name: "BookEscort",
       component: BookEscort,
+      meta: {
+        requiresAuth: true,
+      },
+    },
+    {
+      path: "/orders",
+      name: "OrderList",
+      component: OrderList,
       meta: {
         requiresAuth: true,
       },

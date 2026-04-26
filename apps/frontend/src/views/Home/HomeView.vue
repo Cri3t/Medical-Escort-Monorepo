@@ -30,6 +30,9 @@ const copy = {
   bookingTitle: "Book Escort Service",
   bookingDescription:
     "Submit appointment time, hospital, and service needs. The platform will match you with a suitable escort.",
+  orderTitle: "My Orders",
+  orderDescription:
+    "View your created escort orders, appointment hospitals, service times, and order statuses.",
 };
 
 const router = useRouter();
@@ -156,6 +159,10 @@ function goApplyEscort() {
 function goBookEscort() {
   router.push("/book");
 }
+
+function goMyOrders() {
+  router.push("/orders");
+}
 </script>
 
 <template>
@@ -188,7 +195,7 @@ function goBookEscort() {
         </p>
       </div>
 
-      <div class="grid gap-5 md:grid-cols-2">
+      <div class="grid gap-5 md:grid-cols-3">
         <article
           class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
         >
@@ -209,6 +216,29 @@ function goBookEscort() {
             @click="goBookEscort"
           >
             Book Now
+          </button>
+        </article>
+
+        <article
+          class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+        >
+          <div
+            class="mb-5 flex h-12 w-12 items-center justify-center rounded-lg bg-orange-50 text-xl text-orange-700"
+          >
+            #
+          </div>
+          <h3 class="text-lg font-semibold text-slate-950">
+            {{ copy.orderTitle }}
+          </h3>
+          <p class="mt-2 text-sm leading-6 text-slate-500">
+            {{ copy.orderDescription }}
+          </p>
+          <button
+            type="button"
+            class="mt-6 w-full rounded-lg bg-orange-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-600/20 transition hover:bg-orange-700 focus:outline-none focus:ring-4 focus:ring-orange-200"
+            @click="goMyOrders"
+          >
+            View Orders
           </button>
         </article>
 
