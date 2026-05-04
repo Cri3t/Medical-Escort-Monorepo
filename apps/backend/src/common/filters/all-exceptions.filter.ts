@@ -5,6 +5,7 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+import { HttpAdapterHost } from '@nestjs/core';
 import { Prisma } from '@medical-escort/database';
 
 interface ErrorResponse {
@@ -18,25 +19,22 @@ interface HttpResponseBody {
   error?: string;
 }
 
-interface HttpAdapterResponse {
-  status: (statusCode: number) => {
-    json: (body: ErrorResponse) => void;
-  };
-}
-
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
+  constructor(private readonly httpAdapterHost: HttpAdapterHost) {}
+
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
-    const response = ctx.getResponse<HttpAdapterResponse>();
+    const response = ctx.getResponse();
 
     const { status, message } = this.resolveException(exception);
-
-    response.status(status).json({
+    const body: ErrorResponse = {
       code: status,
       data: null,
       message,
-    });
+    };
+
+    this.httpAdapterHost.httpAdapter.reply(response, body, status);
   }
 
   private resolveException(exception: unknown): {
