@@ -1,7 +1,6 @@
-import { UserRole } from '@medical-escort/database';
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEnum, IsOptional, IsString, Length, Matches } from 'class-validator';
+import { IsOptional, IsString, Length, Matches } from 'class-validator';
 
 export class RegisterDto {
   @ApiProperty({
@@ -22,20 +21,10 @@ export class RegisterDto {
 
   @ApiProperty({
     description: '用户昵称',
-    example: '陪诊用户',
+    example: '普通用户',
     required: false,
   })
   @IsOptional()
   @IsString()
   nickname?: string;
-
-  @ApiProperty({
-    description: '用户角色',
-    enum: UserRole,
-    example: UserRole.USER,
-    required: false,
-  })
-  @IsOptional()
-  @IsEnum(UserRole, { message: '用户角色不合法' })
-  role?: UserRole;
 }

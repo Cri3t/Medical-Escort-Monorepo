@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { OrderStatus, UserRole } from '@medical-escort/database';
+import { EscortProfileStatus, OrderStatus, UserRole } from '@medical-escort/database';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SafeUser } from '../user/types/safe-user.type';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -21,10 +21,21 @@ export class OrdersService {
       select: {
         id: true,
         role: true,
+        escortProfile: {
+          select: {
+            status: true,
+            isVerified: true,
+          },
+        },
       },
     });
 
-    if (!escort || escort.role !== UserRole.ESCORT) {
+    if (
+      !escort ||
+      escort.role !== UserRole.ESCORT ||
+      escort.escortProfile?.status !== EscortProfileStatus.APPROVED ||
+      !escort.escortProfile.isVerified
+    ) {
       throw new BadRequestException('Escort does not exist or is not available');
     }
 

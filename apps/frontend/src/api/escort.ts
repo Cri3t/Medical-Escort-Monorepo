@@ -4,6 +4,7 @@ export interface PublicEscortProfile {
   id: string;
   userId: string;
   isVerified: boolean;
+  status: "APPROVED";
   createdAt: string;
   updatedAt: string;
   user: {

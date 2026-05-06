@@ -26,10 +26,6 @@ export class AuthService {
     const phone = this.normalizePhone(dto.phone);
     this.validatePhoneAndPassword(phone, dto.password);
 
-    if (dto.role && !Object.values(UserRole).includes(dto.role)) {
-      throw new BadRequestException('用户角色不合法');
-    }
-
     const passwordHash = await bcrypt.hash(dto.password, this.passwordSaltRounds);
     const nickname =
       dto.nickname?.trim() ||
@@ -38,7 +34,7 @@ export class AuthService {
       phone,
       password: passwordHash,
       nickname,
-      role: dto.role,
+      role: UserRole.USER,
     });
 
     return {

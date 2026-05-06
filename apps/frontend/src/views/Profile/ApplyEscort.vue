@@ -8,6 +8,8 @@ interface EscortProfile {
   userId: string;
   idCardNo: string;
   isVerified: boolean;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  rejectionReason: string | null;
   createdAt: string;
   updatedAt: string;
 }

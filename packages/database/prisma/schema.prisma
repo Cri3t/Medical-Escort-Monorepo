@@ -16,6 +16,13 @@ datasource db {
 enum UserRole {
   USER
   ESCORT
+  ADMIN
+}
+
+enum EscortProfileStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 /// 订单状态
@@ -82,6 +89,10 @@ model EscortProfile {
   /// 审核通过标志
   isVerified Boolean @default(false)
 
+  status EscortProfileStatus @default(PENDING)
+
+  rejectionReason String? @db.Text
+
   /// 创建时间
   createdAt DateTime @default(now())
 
@@ -92,6 +103,7 @@ model EscortProfile {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([isVerified])
+  @@index([status])
   @@map("escort_profiles")
 }
 
@@ -142,4 +154,3 @@ model Order {
   @@index([serviceAt])
   @@map("orders")
 }
-

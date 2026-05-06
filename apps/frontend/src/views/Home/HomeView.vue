@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import { ClipboardCheck } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 import UserNav from "@/components/UserNav.vue";
 import request from "@/utils/request";
@@ -15,11 +16,18 @@ interface EscortProfile {
   userId: string;
   idCardNo: string;
   isVerified: boolean;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  rejectionReason: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
-type ProfileStatus = "LOADING" | "NOT_APPLIED" | "PENDING" | "APPROVED";
+type ProfileStatus =
+  | "LOADING"
+  | "NOT_APPLIED"
+  | "PENDING"
+  | "APPROVED"
+  | "REJECTED";
 
 const copy = {
   userFallback: "User",
@@ -38,6 +46,7 @@ const copy = {
 const router = useRouter();
 const profileStatus = ref<ProfileStatus>("LOADING");
 const profileLoading = ref(true);
+const rejectionReason = ref("");
 
 const user = computed<StoredUser>(() => {
   const rawUser = localStorage.getItem("user");
@@ -80,6 +89,10 @@ const escortCardTitle = computed(() => {
     return "Onboarding Review in Progress...";
   }
 
+  if (profileStatus.value === "REJECTED") {
+    return "Onboarding Application Rejected";
+  }
+
   return "Become an Escort";
 });
 
@@ -90,6 +103,12 @@ const escortCardDescription = computed(() => {
 
   if (profileStatus.value === "PENDING") {
     return "Your escort identity verification has been submitted and is under review.";
+  }
+
+  if (profileStatus.value === "REJECTED") {
+    return rejectionReason.value
+      ? `Your application was rejected: ${rejectionReason.value}`
+      : "Your escort identity verification application was rejected. Please contact the platform administrator.";
   }
 
   if (profileStatus.value === "APPROVED" || user.value.role === "ESCORT") {
@@ -108,6 +127,10 @@ const escortButtonText = computed(() => {
     return "Under Review";
   }
 
+  if (profileStatus.value === "REJECTED") {
+    return "Rejected";
+  }
+
   if (profileStatus.value === "APPROVED" || user.value.role === "ESCORT") {
     return "Approved";
   }
@@ -119,9 +142,12 @@ const escortActionDisabled = computed(
   () =>
     profileLoading.value ||
     profileStatus.value === "PENDING" ||
+    profileStatus.value === "REJECTED" ||
     profileStatus.value === "APPROVED" ||
     user.value.role === "ESCORT",
 );
+
+const isAdmin = computed(() => user.value.role === "ADMIN");
 
 onMounted(() => {
   void loadMyProfile();
@@ -140,7 +166,8 @@ async function loadMyProfile() {
       return;
     }
 
-    profileStatus.value = profile.isVerified ? "APPROVED" : "PENDING";
+    profileStatus.value = profile.status;
+    rejectionReason.value = profile.rejectionReason ?? "";
   } catch {
     profileStatus.value = "NOT_APPLIED";
   } finally {
@@ -162,6 +189,10 @@ function goBookEscort() {
 
 function goMyOrders() {
   router.push("/orders");
+}
+
+function goEscortReviews() {
+  router.push("/admin/escort-reviews");
 }
 </script>
 
@@ -268,6 +299,30 @@ function goMyOrders() {
             @click="goApplyEscort"
           >
             {{ escortButtonText }}
+          </button>
+        </article>
+
+        <article
+          v-if="isAdmin"
+          class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+        >
+          <div
+            class="mb-5 flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-50 text-xl text-indigo-700"
+          >
+            <ClipboardCheck class="h-6 w-6" aria-hidden="true" />
+          </div>
+          <h3 class="text-lg font-semibold text-slate-950">
+            陪诊员审核
+          </h3>
+          <p class="mt-2 text-sm leading-6 text-slate-500">
+            查看待审核陪诊员申请，并完成通过或拒绝处理。
+          </p>
+          <button
+            type="button"
+            class="mt-6 w-full rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-200"
+            @click="goEscortReviews"
+          >
+            进入审核
           </button>
         </article>
       </div>

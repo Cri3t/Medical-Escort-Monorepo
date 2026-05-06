@@ -1,5 +1,5 @@
 import { ConflictException, Injectable } from '@nestjs/common';
-import { EscortProfile, Prisma } from '@medical-escort/database';
+import { EscortProfile, EscortProfileStatus, Prisma } from '@medical-escort/database';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateProfileDto } from './dto/create-profile.dto';
 
@@ -15,11 +15,15 @@ export class EscortProfileService {
 
   async getPublicProfiles() {
     return this.prisma.escortProfile.findMany({
-      where: { isVerified: true },
+      where: {
+        status: EscortProfileStatus.APPROVED,
+        isVerified: true,
+      },
       select: {
         id: true,
         userId: true,
         isVerified: true,
+        status: true,
         createdAt: true,
         updatedAt: true,
         user: {
@@ -40,6 +44,9 @@ export class EscortProfileService {
         data: {
           userId,
           idCardNo: dto.idCardNo,
+          status: EscortProfileStatus.PENDING,
+          isVerified: false,
+          rejectionReason: null,
         },
       });
     } catch (error) {

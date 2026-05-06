@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { LogOut, UserRound } from "lucide-vue-next";
+import { ClipboardCheck, LogOut, UserRound } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,6 +38,12 @@ const maskedPhone = computed(() => {
 
 const nickname = computed(() => props.user.nickname || "未设置昵称");
 
+const isAdmin = computed(() => props.user.role === "ADMIN");
+
+function goEscortReviews() {
+  router.push("/admin/escort-reviews");
+}
+
 function handleLogout() {
   localStorage.removeItem("user");
   localStorage.removeItem("token");
@@ -68,6 +74,11 @@ function handleLogout() {
         </div>
       </DropdownMenuLabel>
       <DropdownMenuSeparator />
+      <DropdownMenuItem v-if="isAdmin" @select="goEscortReviews">
+        <ClipboardCheck class="h-4 w-4" aria-hidden="true" />
+        <span>陪诊员审核</span>
+      </DropdownMenuItem>
+      <DropdownMenuSeparator v-if="isAdmin" />
       <DropdownMenuItem
         class="text-red-600 focus:bg-red-50 focus:text-red-700"
         @select="handleLogout"
