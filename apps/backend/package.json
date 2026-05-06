@@ -7,6 +7,7 @@
     "build": "nest build"
   },
   "dependencies": {
+    "@fastify/static": "^9.1.3",
     "@medical-escort/database": "workspace:*",
     "@medical-escort/shared": "workspace:*",
     "@nestjs/common": "^11.0.0",

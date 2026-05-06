@@ -8,6 +8,7 @@ import { OrderStatus, UserRole } from '@medical-escort/database';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SafeUser } from '../user/types/safe-user.type';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { UpdateOrderByUserDto } from './dto/update-order-by-user.dto';
 import type { OrderListItem, OrderParticipant } from './types/order-list-item.type';
 
 @Injectable()
@@ -107,6 +108,74 @@ export class OrdersService {
     return this.toOrderListItem(updatedOrder);
   }
 
+  async userUpdateOrder(
+    userId: string,
+    orderId: string,
+    dto: UpdateOrderByUserDto,
+  ): Promise<OrderListItem> {
+    const hasRemark = Object.prototype.hasOwnProperty.call(dto, 'remark');
+    const hasAmount = Object.prototype.hasOwnProperty.call(dto, 'amount');
+
+    if (!hasRemark && !hasAmount) {
+      throw new BadRequestException('请至少提交一个要修改的字段');
+    }
+
+    const order = await this.findOrderOrThrow(orderId);
+
+    if (order.customerId !== userId) {
+      throw new ForbiddenException('无权操作此订单');
+    }
+
+    const remarkEditableStatuses: OrderStatus[] = [
+      OrderStatus.PENDING_PAYMENT,
+      OrderStatus.PENDING_ACCEPT,
+    ];
+
+    if (hasRemark && !remarkEditableStatuses.includes(order.status)) {
+      throw new BadRequestException('当前订单状态不允许修改备注');
+    }
+
+    if (hasAmount && order.status !== OrderStatus.PENDING_ACCEPT) {
+      throw new BadRequestException('当前订单状态不允许修改金额');
+    }
+
+    const updateData: {
+      remark?: string | null;
+      amount?: number;
+    } = {};
+
+    if (hasRemark) {
+      const remark = typeof dto.remark === 'string' ? dto.remark.trim() : '';
+      updateData.remark = remark || null;
+    }
+
+    if (hasAmount) {
+      updateData.amount = dto.amount;
+    }
+
+    const allowedStatuses = hasAmount
+      ? [OrderStatus.PENDING_ACCEPT]
+      : [OrderStatus.PENDING_PAYMENT, OrderStatus.PENDING_ACCEPT];
+    const result = await this.prisma.order.updateMany({
+      where: {
+        id: orderId,
+        customerId: userId,
+        status: {
+          in: allowedStatuses,
+        },
+      },
+      data: updateData,
+    });
+
+    if (result.count === 0) {
+      throw new BadRequestException('订单状态已变更，请刷新后重试');
+    }
+
+    const updatedOrder = await this.findOrderOrThrow(orderId);
+
+    return this.toOrderListItem(updatedOrder);
+  }
+
   async acceptOrder(escortId: string, orderId: string): Promise<OrderListItem> {
     const order = await this.findOrderOrThrow(orderId);
 
@@ -145,6 +214,38 @@ export class OrdersService {
         status: OrderStatus.COMPLETED,
       },
     });
+
+    return this.toOrderListItem(updatedOrder);
+  }
+
+  async rejectOrder(escortId: string, orderId: string): Promise<OrderListItem> {
+    const order = await this.findOrderOrThrow(orderId);
+
+    if (order.escortId !== escortId) {
+      throw new ForbiddenException('无权操作此订单');
+    }
+
+    if (order.status !== OrderStatus.PENDING_ACCEPT) {
+      throw new BadRequestException('当前订单状态不允许拒绝接单');
+    }
+
+    const result = await this.prisma.order.updateMany({
+      where: {
+        id: orderId,
+        escortId,
+        status: OrderStatus.PENDING_ACCEPT,
+      },
+      data: {
+        escortId: null,
+        status: OrderStatus.PENDING_ACCEPT,
+      },
+    });
+
+    if (result.count === 0) {
+      throw new BadRequestException('订单状态已变更，请刷新后重试');
+    }
+
+    const updatedOrder = await this.findOrderOrThrow(orderId);
 
     return this.toOrderListItem(updatedOrder);
   }

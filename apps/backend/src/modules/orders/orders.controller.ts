@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { UserRole } from '@medical-escort/database';
 import {
   ApiBearerAuth,
@@ -13,6 +21,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { SafeUser } from '../user/types/safe-user.type';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { UpdateOrderByUserDto } from './dto/update-order-by-user.dto';
 import { OrdersService } from './orders.service';
 import type { OrderListItem } from './types/order-list-item.type';
 
@@ -75,6 +84,36 @@ export class OrdersController {
     return this.ordersService.payOrder(user.id, orderId);
   }
 
+  @ApiOperation({
+    summary: 'Update order remark or amount as the current patient',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Order ID',
+    example: 'clx0000000000000000000000',
+  })
+  @ApiResponse({ status: 200, description: 'Order updated.' })
+  @ApiResponse({
+    status: 400,
+    description: 'Order cannot be updated in its current status.',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized or login expired.' })
+  @ApiResponse({
+    status: 403,
+    description: 'The current user cannot operate this order.',
+  })
+  @ApiResponse({ status: 404, description: 'Order not found.' })
+  @Patch(':id/user-update')
+  @Roles(UserRole.USER)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  userUpdateOrder(
+    @CurrentUser() user: SafeUser,
+    @Param('id') orderId: string,
+    @Body() dto: UpdateOrderByUserDto,
+  ): Promise<OrderListItem> {
+    return this.ordersService.userUpdateOrder(user.id, orderId, dto);
+  }
+
   @ApiOperation({ summary: 'Accept an assigned order as the current escort' })
   @ApiParam({
     name: 'id',
@@ -133,5 +172,35 @@ export class OrdersController {
     @Param('id') orderId: string,
   ): Promise<OrderListItem> {
     return this.ordersService.completeOrder(user.id, orderId);
+  }
+
+  @ApiOperation({ summary: 'Reject an assigned order as the current escort' })
+  @ApiParam({
+    name: 'id',
+    description: 'Order ID',
+    example: 'clx0000000000000000000000',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Order escort cleared and status kept as PENDING_ACCEPT.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Order cannot be rejected in its current status.',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized or login expired.' })
+  @ApiResponse({
+    status: 403,
+    description: 'The current escort cannot operate this order.',
+  })
+  @ApiResponse({ status: 404, description: 'Order not found.' })
+  @Post(':id/reject')
+  @Roles(UserRole.ESCORT)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  rejectOrder(
+    @CurrentUser() user: SafeUser,
+    @Param('id') orderId: string,
+  ): Promise<OrderListItem> {
+    return this.ordersService.rejectOrder(user.id, orderId);
   }
 }

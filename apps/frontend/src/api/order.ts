@@ -8,6 +8,11 @@ export interface CreateOrderPayload {
   remark?: string;
 }
 
+export interface UserUpdateOrderPayload {
+  remark?: string;
+  amount?: number;
+}
+
 export type OrderStatus =
   | "PENDING_PAYMENT"
   | "PENDING_ACCEPT"
@@ -48,10 +53,18 @@ export function payOrder(id: string) {
   return request.post<unknown, Order>(`/orders/${id}/pay`);
 }
 
+export function userUpdateOrder(id: string, data: UserUpdateOrderPayload) {
+  return request.patch<unknown, Order>(`/orders/${id}/user-update`, data);
+}
+
 export function acceptOrder(id: string) {
   return request.post<unknown, Order>(`/orders/${id}/accept`);
 }
 
 export function completeOrder(id: string) {
   return request.post<unknown, Order>(`/orders/${id}/complete`);
+}
+
+export function rejectOrder(id: string) {
+  return request.post<unknown, Order>(`/orders/${id}/reject`);
 }
