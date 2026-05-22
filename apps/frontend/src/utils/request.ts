@@ -1,5 +1,6 @@
 import axios from 'axios'
 import type { AxiosError } from 'axios'
+import { translate } from '@/i18n'
 
 interface ApiResponse<T = unknown> {
   code: number
@@ -30,11 +31,11 @@ request.interceptors.response.use(
       return body.data as any
     }
 
-    alert(body.message || '请求失败')
+    alert(body.message || translate('request.failed'))
     return Promise.reject(body)
   },
   (error: AxiosError<ApiResponse>) => {
-    const message = error.response?.data?.message || error.message || '网络请求失败'
+    const message = error.response?.data?.message || error.message || translate('request.networkFailed')
     alert(message)
     return Promise.reject(error)
   },

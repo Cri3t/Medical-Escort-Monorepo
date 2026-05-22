@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import UserNav from "@/components/UserNav.vue";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,7 +21,7 @@ interface StoredUser {
 }
 
 interface StatusMeta {
-  label: string;
+  labelKey: string;
   className: string;
 }
 
@@ -29,23 +30,23 @@ type EditMode = "remark" | "amount";
 
 const statusMap: Record<OrderStatus, StatusMeta> = {
   PENDING_PAYMENT: {
-    label: "待支付",
+    labelKey: "orders.status.pendingPayment",
     className: "bg-orange-50 text-orange-700 ring-orange-200",
   },
   PENDING_ACCEPT: {
-    label: "待接单",
+    labelKey: "orders.status.pendingAccept",
     className: "bg-sky-50 text-sky-700 ring-sky-200",
   },
   IN_SERVICE: {
-    label: "服务中",
+    labelKey: "orders.status.inService",
     className: "bg-blue-50 text-blue-700 ring-blue-200",
   },
   COMPLETED: {
-    label: "已完成",
+    labelKey: "orders.status.completed",
     className: "bg-green-50 text-green-700 ring-green-200",
   },
   CANCELLED: {
-    label: "已取消",
+    labelKey: "orders.status.cancelled",
     className: "bg-slate-100 text-slate-600 ring-slate-200",
   },
 };
@@ -58,6 +59,9 @@ const editMode = ref<EditMode | null>(null);
 const remarkInput = ref("");
 const amountInput = ref("");
 const editSubmitting = ref(false);
+const { locale, t } = useI18n();
+
+const intlLocale = computed(() => (locale.value === "zh-CN" ? "zh-CN" : "en-US"));
 
 const user = computed<StoredUser>(() => {
   const rawUser = localStorage.getItem("user");
@@ -81,7 +85,7 @@ const displayName = computed(() => {
   const phone = user.value.phone;
 
   if (!phone || phone.length < 7) {
-    return "用户";
+    return t("orders.userFallback");
   }
 
   return `${phone.slice(0, 3)}****${phone.slice(-4)}`;
@@ -89,10 +93,10 @@ const displayName = computed(() => {
 
 const editTitle = computed(() => {
   if (editMode.value === "remark") {
-    return "修改备注";
+    return t("orders.editRemarkTitle");
   }
 
-  return "修改金额";
+  return t("orders.editAmountTitle");
 });
 
 onMounted(() => {
@@ -116,7 +120,7 @@ function formatDateTime(value: string) {
     return value;
   }
 
-  return new Intl.DateTimeFormat("zh-CN", {
+  return new Intl.DateTimeFormat(intlLocale.value, {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -133,7 +137,7 @@ function formatAmount(value: string | number) {
     return String(value);
   }
 
-  return new Intl.NumberFormat("zh-CN", {
+  return new Intl.NumberFormat(intlLocale.value, {
     style: "currency",
     currency: "CNY",
   }).format(amount);
@@ -141,6 +145,10 @@ function formatAmount(value: string | number) {
 
 function getStatusMeta(status: OrderStatus) {
   return statusMap[status];
+}
+
+function getStatusLabel(status: OrderStatus) {
+  return t(getStatusMeta(status).labelKey);
 }
 
 function getActionKey(order: Order, action: OrderAction) {
@@ -239,7 +247,7 @@ function buildEditPayload(): UserUpdateOrderPayload | null {
     amount < 0 ||
     !/^\d+(\.\d{1,2})?$/.test(amountInput.value.trim())
   ) {
-    alert("请输入非负金额，最多保留两位小数");
+    alert(t("orders.invalidEditAmount"));
     return null;
   }
 
@@ -263,7 +271,7 @@ async function submitEditor() {
 
   try {
     await userUpdateOrder(editingOrder.value.id, payload);
-    alert("订单已更新");
+    alert(t("orders.updateSuccess"));
     closeEditorAfterSubmit();
     await fetchOrders();
   } catch {
@@ -304,27 +312,25 @@ async function runOrderAction(
 }
 
 async function handlePay(order: Order) {
-  await runOrderAction(order, "pay", payOrder, "支付成功");
+  await runOrderAction(order, "pay", payOrder, t("orders.paySuccess"));
 }
 
 async function handleAccept(order: Order) {
-  await runOrderAction(order, "accept", acceptOrder, "已接单");
+  await runOrderAction(order, "accept", acceptOrder, t("orders.acceptSuccess"));
 }
 
 async function handleComplete(order: Order) {
-  await runOrderAction(order, "complete", completeOrder, "服务已完成");
+  await runOrderAction(order, "complete", completeOrder, t("orders.completeSuccess"));
 }
 
 async function handleReject(order: Order) {
-  const confirmed = window.confirm(
-    "确认拒绝接单吗？拒绝后该订单将从你的列表中移除。",
-  );
+  const confirmed = window.confirm(t("orders.rejectConfirm"));
 
   if (!confirmed) {
     return;
   }
 
-  await runOrderAction(order, "reject", rejectOrder, "已拒绝接单");
+  await runOrderAction(order, "reject", rejectOrder, t("orders.rejectSuccess"));
 }
 </script>
 
@@ -335,7 +341,7 @@ async function handleReject(order: Order) {
         class="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-5"
       >
         <h1 class="text-2xl font-semibold tracking-normal text-slate-950">
-          我的订单
+          {{ t("orders.title") }}
         </h1>
         <UserNav :display-name="displayName" :user="user" />
       </div>
@@ -358,9 +364,9 @@ async function handleReject(order: Order) {
         v-else-if="orders.length === 0"
         class="rounded-lg border border-dashed border-slate-300 bg-white px-6 py-12 text-center"
       >
-        <p class="text-base font-medium text-slate-700">暂无订单</p>
+        <p class="text-base font-medium text-slate-700">{{ t("orders.emptyTitle") }}</p>
         <p class="mt-2 text-sm text-slate-500">
-          创建陪诊预约后，订单会显示在这里。
+          {{ t("orders.emptyDescription") }}
         </p>
       </div>
 
@@ -374,51 +380,51 @@ async function handleReject(order: Order) {
             class="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-start sm:justify-between"
           >
             <div class="min-w-0">
-              <p class="text-sm text-slate-500">订单编号</p>
+              <p class="text-sm text-slate-500">{{ t("orders.orderNo") }}</p>
               <h2 class="mt-1 break-all text-lg font-semibold text-slate-950">
                 {{ order.orderNo }}
               </h2>
               <p class="mt-2 text-sm text-slate-500">
-                创建时间：{{ formatDateTime(order.createdAt) }}
+                {{ t("orders.createdAt", { time: formatDateTime(order.createdAt) }) }}
               </p>
             </div>
             <span
               class="inline-flex w-fit items-center rounded-full px-3 py-1 text-sm font-medium ring-1"
               :class="getStatusMeta(order.status).className"
             >
-              {{ getStatusMeta(order.status).label }}
+              {{ getStatusLabel(order.status) }}
             </span>
           </div>
 
           <dl class="grid gap-4 py-5 sm:grid-cols-2">
             <div>
-              <dt class="text-sm text-slate-500">陪诊员</dt>
+              <dt class="text-sm text-slate-500">{{ t("orders.escort") }}</dt>
               <dd class="mt-1 text-base font-medium text-slate-900">
-                {{ order.escort?.nickname || "等待接单" }}
+                {{ order.escort?.nickname || t("orders.waitingAccept") }}
               </dd>
             </div>
             <div>
-              <dt class="text-sm text-slate-500">订单金额</dt>
+              <dt class="text-sm text-slate-500">{{ t("orders.amount") }}</dt>
               <dd class="mt-1 text-base font-semibold text-slate-950">
                 {{ formatAmount(order.amount) }}
               </dd>
             </div>
             <div>
-              <dt class="text-sm text-slate-500">医院名称</dt>
+              <dt class="text-sm text-slate-500">{{ t("orders.hospitalName") }}</dt>
               <dd class="mt-1 text-base font-medium text-slate-900">
                 {{ order.hospitalName }}
               </dd>
             </div>
             <div>
-              <dt class="text-sm text-slate-500">预约时间</dt>
+              <dt class="text-sm text-slate-500">{{ t("orders.serviceAt") }}</dt>
               <dd class="mt-1 text-base font-medium text-slate-900">
                 {{ formatDateTime(order.serviceAt) }}
               </dd>
             </div>
             <div class="sm:col-span-2">
-              <dt class="text-sm text-slate-500">备注</dt>
+              <dt class="text-sm text-slate-500">{{ t("orders.remark") }}</dt>
               <dd class="mt-1 whitespace-pre-wrap break-words text-base text-slate-900">
-                {{ order.remark || "暂无备注" }}
+                {{ order.remark || t("orders.noRemark") }}
               </dd>
             </div>
           </dl>
@@ -434,7 +440,7 @@ async function handleReject(order: Order) {
               :disabled="isAnyActionLoading()"
               @click="openRemarkEditor(order)"
             >
-              修改备注
+              {{ t("orders.updateRemark") }}
             </Button>
             <Button
               v-if="canUpdateAmount(order)"
@@ -443,7 +449,7 @@ async function handleReject(order: Order) {
               :disabled="isAnyActionLoading()"
               @click="openAmountEditor(order)"
             >
-              修改金额
+              {{ t("orders.updateAmount") }}
             </Button>
             <Button
               v-if="canPay(order)"
@@ -452,7 +458,7 @@ async function handleReject(order: Order) {
               :disabled="isAnyActionLoading()"
               @click="handlePay(order)"
             >
-              {{ isActionLoading(order, "pay") ? "支付中..." : "去支付" }}
+              {{ isActionLoading(order, "pay") ? t("orders.paying") : t("orders.pay") }}
             </Button>
             <Button
               v-if="canAccept(order)"
@@ -461,7 +467,7 @@ async function handleReject(order: Order) {
               :disabled="isAnyActionLoading()"
               @click="handleAccept(order)"
             >
-              {{ isActionLoading(order, "accept") ? "接单中..." : "接单" }}
+              {{ isActionLoading(order, "accept") ? t("orders.accepting") : t("orders.accept") }}
             </Button>
             <Button
               v-if="canReject(order)"
@@ -470,7 +476,7 @@ async function handleReject(order: Order) {
               :disabled="isAnyActionLoading()"
               @click="handleReject(order)"
             >
-              {{ isActionLoading(order, "reject") ? "拒绝中..." : "拒绝接单" }}
+              {{ isActionLoading(order, "reject") ? t("orders.rejecting") : t("orders.reject") }}
             </Button>
             <Button
               v-if="canComplete(order)"
@@ -481,8 +487,8 @@ async function handleReject(order: Order) {
             >
               {{
                 isActionLoading(order, "complete")
-                  ? "完成中..."
-                  : "完成服务"
+                  ? t("orders.completing")
+                  : t("orders.complete")
               }}
             </Button>
           </div>
@@ -512,7 +518,7 @@ async function handleReject(order: Order) {
             :disabled="editSubmitting"
             @click="closeEditor"
           >
-            关闭
+            {{ t("common.close") }}
           </button>
         </div>
 
@@ -521,11 +527,11 @@ async function handleReject(order: Order) {
             v-if="editMode === 'remark'"
             class="block text-sm font-medium text-slate-700"
           >
-            备注
+            {{ t("orders.remark") }}
             <textarea
               v-model="remarkInput"
               class="mt-2 min-h-32 w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-              placeholder="请输入订单备注"
+              :placeholder="t('orders.remarkPlaceholder')"
             ></textarea>
           </label>
 
@@ -533,14 +539,14 @@ async function handleReject(order: Order) {
             v-else
             class="block text-sm font-medium text-slate-700"
           >
-            金额
+            {{ t("orders.amount") }}
             <input
               v-model="amountInput"
               type="number"
               min="0"
               step="0.01"
               class="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-              placeholder="请输入订单金额"
+              :placeholder="t('orders.amountPlaceholder')"
             />
           </label>
         </div>
@@ -552,7 +558,7 @@ async function handleReject(order: Order) {
             :disabled="editSubmitting"
             @click="closeEditor"
           >
-            取消
+            {{ t("common.cancel") }}
           </Button>
           <Button
             type="button"
@@ -560,7 +566,7 @@ async function handleReject(order: Order) {
             :disabled="editSubmitting"
             @click="submitEditor"
           >
-            {{ editSubmitting ? "提交中..." : "保存" }}
+            {{ editSubmitting ? t("common.submitting") : t("common.save") }}
           </Button>
         </div>
       </section>

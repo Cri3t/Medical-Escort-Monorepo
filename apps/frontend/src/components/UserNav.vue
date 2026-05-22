@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { ClipboardCheck, LogOut, UserRound } from "lucide-vue-next";
+import { useI18n } from "vue-i18n";
+import { ClipboardCheck, Languages, LogOut, UserRound } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 import { Button } from "@/components/ui/button";
+import { setLocale, type SupportedLocale } from "@/i18n";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,20 +27,27 @@ interface UserNavProps {
 
 const props = defineProps<UserNavProps>();
 const router = useRouter();
+const { locale, t } = useI18n();
+
+const currentLocale = computed(() => locale.value as SupportedLocale);
 
 const maskedPhone = computed(() => {
   const phone = props.user.phone;
 
   if (!phone || phone.length < 7) {
-    return "暂无手机号";
+    return t("userNav.noPhone");
   }
 
   return `${phone.slice(0, 3)}****${phone.slice(-4)}`;
 });
 
-const nickname = computed(() => props.user.nickname || "未设置昵称");
+const nickname = computed(() => props.user.nickname || t("userNav.nicknameFallback"));
 
 const isAdmin = computed(() => props.user.role === "ADMIN");
+
+const nextLanguageLabel = computed(() =>
+  currentLocale.value === "en" ? t("common.chinese") : t("common.english"),
+);
 
 function goEscortReviews() {
   router.push("/admin/escort-reviews");
@@ -48,6 +57,10 @@ function handleLogout() {
   localStorage.removeItem("user");
   localStorage.removeItem("token");
   router.push("/auth");
+}
+
+function toggleLocale() {
+  setLocale(currentLocale.value === "en" ? "zh-CN" : "en");
 }
 </script>
 
@@ -76,15 +89,20 @@ function handleLogout() {
       <DropdownMenuSeparator />
       <DropdownMenuItem v-if="isAdmin" @select="goEscortReviews">
         <ClipboardCheck class="h-4 w-4" aria-hidden="true" />
-        <span>陪诊员审核</span>
+        <span>{{ t("userNav.escortReviews") }}</span>
       </DropdownMenuItem>
       <DropdownMenuSeparator v-if="isAdmin" />
+      <DropdownMenuItem @select="toggleLocale">
+        <Languages class="h-4 w-4" aria-hidden="true" />
+        <span>{{ t("common.language") }}: {{ nextLanguageLabel }}</span>
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
       <DropdownMenuItem
         class="text-red-600 focus:bg-red-50 focus:text-red-700"
         @select="handleLogout"
       >
         <LogOut class="h-4 w-4" aria-hidden="true" />
-        <span>退出登录</span>
+        <span>{{ t("userNav.logout") }}</span>
       </DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>

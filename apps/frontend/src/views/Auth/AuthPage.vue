@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
 import request from "../../utils/request";
 
 type AuthMode = "login" | "register";
@@ -18,6 +20,7 @@ interface AuthResult {
 }
 
 const router = useRouter();
+const { t } = useI18n();
 const phonePattern = /^1[3-9]\d{9}$/;
 
 const authMode = ref<AuthMode>("login");
@@ -44,7 +47,7 @@ function isValidPhone(phone: string) {
 
 async function handleLogin() {
   if (!isValidPhone(loginForm.value.phone)) {
-    alert("请输入正确的手机号");
+    alert(t("auth.invalidPhone"));
     return;
   }
 
@@ -59,7 +62,7 @@ async function handleLogin() {
     localStorage.setItem("token", data.accessToken);
     localStorage.setItem("user", JSON.stringify(data.user));
 
-    alert("登录成功");
+    alert(t("auth.loginSuccess"));
     router.push("/");
   } finally {
     isLoading.value = false;
@@ -68,7 +71,7 @@ async function handleLogin() {
 
 async function handleRegister() {
   if (!isValidPhone(registerForm.value.phone)) {
-    alert("请输入正确的手机号");
+    alert(t("auth.invalidPhone"));
     return;
   }
 
@@ -84,7 +87,7 @@ async function handleRegister() {
     registerForm.value.phone = "";
     registerForm.value.password = "";
     registerForm.value.confirmPassword = "";
-    alert("注册成功");
+    alert(t("auth.registerSuccess"));
   } finally {
     isLoading.value = false;
   }
@@ -93,24 +96,28 @@ async function handleRegister() {
 
 <template>
   <main
-    class="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top_left,_#dff7f2,_transparent_34%),linear-gradient(135deg,_#f7fbff_0%,_#eef6f7_46%,_#f8fafc_100%)] px-4 py-10 text-slate-900"
+    class="relative flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top_left,_#dff7f2,_transparent_34%),linear-gradient(135deg,_#f7fbff_0%,_#eef6f7_46%,_#f8fafc_100%)] px-4 py-10 text-slate-900"
   >
+    <div class="absolute right-4 top-4">
+      <LanguageSwitcher />
+    </div>
+
     <section
       class="w-full max-w-md rounded-lg border border-white/70 bg-white/90 p-8 shadow-auth backdrop-blur"
     >
       <div class="mb-8 text-center">
         <p class="mb-3 text-sm font-medium text-teal-700">
-          Medical Escort Platform
+          {{ t("auth.platform") }}
         </p>
         <h1 class="text-3xl font-semibold tracking-normal text-slate-950">
-          医疗陪诊系统
+          {{ t("auth.title") }}
         </h1>
       </div>
 
       <div
         class="mb-8 grid grid-cols-2 rounded-lg bg-slate-100 p-1"
         role="tablist"
-        aria-label="认证方式"
+        :aria-label="t('auth.authMethod')"
       >
         <button
           type="button"
@@ -125,7 +132,7 @@ async function handleRegister() {
           :disabled="isLoading"
           @click="switchMode('login')"
         >
-          登录
+          {{ t("auth.login") }}
         </button>
         <button
           type="button"
@@ -140,7 +147,7 @@ async function handleRegister() {
           :disabled="isLoading"
           @click="switchMode('register')"
         >
-          注册
+          {{ t("auth.register") }}
         </button>
       </div>
 
@@ -161,27 +168,27 @@ async function handleRegister() {
         >
           <label class="block">
             <span class="mb-2 block text-sm font-medium text-slate-700"
-              >手机号</span
+              >{{ t("auth.phone") }}</span
             >
             <input
               v-model="loginForm.phone"
               type="tel"
               autocomplete="tel"
               maxlength="11"
-              placeholder="请输入 11 位手机号"
+              :placeholder="t('auth.phonePlaceholder')"
               class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
             />
           </label>
 
           <label class="block">
             <span class="mb-2 block text-sm font-medium text-slate-700"
-              >密码</span
+              >{{ t("auth.password") }}</span
             >
             <input
               v-model="loginForm.password"
               type="password"
               autocomplete="current-password"
-              placeholder="请输入密码"
+              :placeholder="t('auth.passwordPlaceholder')"
               class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
             />
           </label>
@@ -191,7 +198,7 @@ async function handleRegister() {
             :disabled="isLoading"
             class="w-full rounded-lg bg-teal-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-600/20 transition hover:bg-teal-700 focus:outline-none focus:ring-4 focus:ring-teal-200 disabled:cursor-not-allowed disabled:bg-teal-400"
           >
-            {{ isLoading ? "登录中..." : "登录" }}
+            {{ isLoading ? t("auth.loggingIn") : t("auth.login") }}
           </button>
         </form>
 
@@ -203,40 +210,40 @@ async function handleRegister() {
         >
           <label class="block">
             <span class="mb-2 block text-sm font-medium text-slate-700"
-              >手机号</span
+              >{{ t("auth.phone") }}</span
             >
             <input
               v-model="registerForm.phone"
               type="tel"
               autocomplete="tel"
               maxlength="11"
-              placeholder="请输入 11 位手机号"
+              :placeholder="t('auth.phonePlaceholder')"
               class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
             />
           </label>
 
           <label class="block">
             <span class="mb-2 block text-sm font-medium text-slate-700"
-              >密码</span
+              >{{ t("auth.password") }}</span
             >
             <input
               v-model="registerForm.password"
               type="password"
               autocomplete="new-password"
-              placeholder="请输入密码"
+              :placeholder="t('auth.passwordPlaceholder')"
               class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
             />
           </label>
 
           <label class="block">
             <span class="mb-2 block text-sm font-medium text-slate-700"
-              >确认密码</span
+              >{{ t("auth.confirmPassword") }}</span
             >
             <input
               v-model="registerForm.confirmPassword"
               type="password"
               autocomplete="new-password"
-              placeholder="请再次输入密码"
+              :placeholder="t('auth.confirmPasswordPlaceholder')"
               class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
             />
           </label>
@@ -246,7 +253,7 @@ async function handleRegister() {
             :disabled="isLoading"
             class="w-full rounded-lg bg-teal-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-600/20 transition hover:bg-teal-700 focus:outline-none focus:ring-4 focus:ring-teal-200 disabled:cursor-not-allowed disabled:bg-teal-400"
           >
-            {{ isLoading ? "注册中..." : "注册" }}
+            {{ isLoading ? t("auth.registering") : t("auth.register") }}
           </button>
         </form>
       </Transition>

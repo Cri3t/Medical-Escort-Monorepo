@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { ClipboardCheck } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 import UserNav from "@/components/UserNav.vue";
@@ -29,21 +30,8 @@ type ProfileStatus =
   | "APPROVED"
   | "REJECTED";
 
-const copy = {
-  userFallback: "User",
-  pageTitle: "Medical Escort Service Dashboard",
-  sectionTitle: "Service Entry",
-  sectionDescription:
-    "Manage your medical escort service workflow, submit onboarding applications, and view available platform features.",
-  bookingTitle: "Book Escort Service",
-  bookingDescription:
-    "Submit appointment time, hospital, and service needs. The platform will match you with a suitable escort.",
-  orderTitle: "My Orders",
-  orderDescription:
-    "View your created escort orders, appointment hospitals, service times, and order statuses.",
-};
-
 const router = useRouter();
+const { t } = useI18n();
 const profileStatus = ref<ProfileStatus>("LOADING");
 const profileLoading = ref(true);
 const rejectionReason = ref("");
@@ -70,7 +58,7 @@ const displayName = computed(() => {
   const phone = user.value.phone;
 
   if (!phone || phone.length < 7) {
-    return copy.userFallback;
+    return t("home.userFallback");
   }
 
   return `${phone.slice(0, 3)}****${phone.slice(-4)}`;
@@ -78,64 +66,64 @@ const displayName = computed(() => {
 
 const escortCardTitle = computed(() => {
   if (profileLoading.value) {
-    return "Escort Onboarding Status";
+    return t("home.escortStatusTitle");
   }
 
   if (profileStatus.value === "APPROVED" || user.value.role === "ESCORT") {
-    return "Escort Dashboard";
+    return t("home.escortDashboardTitle");
   }
 
   if (profileStatus.value === "PENDING") {
-    return "Onboarding Review in Progress...";
+    return t("home.escortPendingTitle");
   }
 
   if (profileStatus.value === "REJECTED") {
-    return "Onboarding Application Rejected";
+    return t("home.escortRejectedTitle");
   }
 
-  return "Become an Escort";
+  return t("home.becomeEscortTitle");
 });
 
 const escortCardDescription = computed(() => {
   if (profileLoading.value) {
-    return "Loading your onboarding application status. Please wait.";
+    return t("home.escortLoadingDescription");
   }
 
   if (profileStatus.value === "PENDING") {
-    return "Your escort identity verification has been submitted and is under review.";
+    return t("home.escortPendingDescription");
   }
 
   if (profileStatus.value === "REJECTED") {
     return rejectionReason.value
-      ? `Your application was rejected: ${rejectionReason.value}`
-      : "Your escort identity verification application was rejected. Please contact the platform administrator.";
+      ? t("home.escortRejectedReason", { reason: rejectionReason.value })
+      : t("home.escortRejectedDescription");
   }
 
   if (profileStatus.value === "APPROVED" || user.value.role === "ESCORT") {
-    return "Your escort identity has been approved. You can enter the escort dashboard to manage service orders.";
+    return t("home.escortApprovedDescription");
   }
 
-  return "Submit identity verification to apply as an escort. After approval, you can receive service orders.";
+  return t("home.becomeEscortDescription");
 });
 
 const escortButtonText = computed(() => {
   if (profileLoading.value) {
-    return "Loading Status...";
+    return t("home.loadingStatus");
   }
 
   if (profileStatus.value === "PENDING") {
-    return "Under Review";
+    return t("home.underReview");
   }
 
   if (profileStatus.value === "REJECTED") {
-    return "Rejected";
+    return t("home.rejected");
   }
 
   if (profileStatus.value === "APPROVED" || user.value.role === "ESCORT") {
-    return "Approved";
+    return t("home.approved");
   }
 
-  return "Apply Now";
+  return t("home.applyNow");
 });
 
 const escortActionDisabled = computed(
@@ -204,12 +192,12 @@ function goEscortReviews() {
       >
         <div>
           <p class="text-sm font-medium text-teal-700">
-            Medical Escort Platform
+            {{ t("home.platform") }}
           </p>
           <h1
             class="mt-1 text-2xl font-semibold tracking-normal text-slate-950"
           >
-            {{ copy.pageTitle }}
+            {{ t("home.pageTitle") }}
           </h1>
         </div>
         <UserNav :display-name="displayName" :user="user" />
@@ -219,10 +207,10 @@ function goEscortReviews() {
     <section class="mx-auto max-w-6xl px-4 py-10">
       <div class="mb-8">
         <h2 class="text-xl font-semibold text-slate-950">
-          {{ copy.sectionTitle }}
+          {{ t("home.sectionTitle") }}
         </h2>
         <p class="mt-2 text-sm text-slate-500">
-          {{ copy.sectionDescription }}
+          {{ t("home.sectionDescription") }}
         </p>
       </div>
 
@@ -236,17 +224,17 @@ function goEscortReviews() {
             +
           </div>
           <h3 class="text-lg font-semibold text-slate-950">
-            {{ copy.bookingTitle }}
+            {{ t("home.bookingTitle") }}
           </h3>
           <p class="mt-2 text-sm leading-6 text-slate-500">
-            {{ copy.bookingDescription }}
+            {{ t("home.bookingDescription") }}
           </p>
           <button
             type="button"
             class="mt-6 w-full rounded-lg bg-teal-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-600/20 transition hover:bg-teal-700 focus:outline-none focus:ring-4 focus:ring-teal-200"
             @click="goBookEscort"
           >
-            Book Now
+            {{ t("home.bookingButton") }}
           </button>
         </article>
 
@@ -259,17 +247,17 @@ function goEscortReviews() {
             #
           </div>
           <h3 class="text-lg font-semibold text-slate-950">
-            {{ copy.orderTitle }}
+            {{ t("home.orderTitle") }}
           </h3>
           <p class="mt-2 text-sm leading-6 text-slate-500">
-            {{ copy.orderDescription }}
+            {{ t("home.orderDescription") }}
           </p>
           <button
             type="button"
             class="mt-6 w-full rounded-lg bg-orange-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-600/20 transition hover:bg-orange-700 focus:outline-none focus:ring-4 focus:ring-orange-200"
             @click="goMyOrders"
           >
-            View Orders
+            {{ t("home.orderButton") }}
           </button>
         </article>
 
@@ -312,17 +300,17 @@ function goEscortReviews() {
             <ClipboardCheck class="h-6 w-6" aria-hidden="true" />
           </div>
           <h3 class="text-lg font-semibold text-slate-950">
-            陪诊员审核
+            {{ t("home.adminReviewTitle") }}
           </h3>
           <p class="mt-2 text-sm leading-6 text-slate-500">
-            查看待审核陪诊员申请，并完成通过或拒绝处理。
+            {{ t("home.adminReviewDescription") }}
           </p>
           <button
             type="button"
             class="mt-6 w-full rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-200"
             @click="goEscortReviews"
           >
-            进入审核
+            {{ t("home.adminReviewButton") }}
           </button>
         </article>
       </div>

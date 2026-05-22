@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { Check, ChevronLeft, ChevronRight, Loader2, ShieldCheck, X } from "lucide-vue-next";
 import {
   getPendingEscortProfiles,
@@ -25,6 +26,9 @@ const rejectDialogOpen = ref(false);
 const rejectTarget = ref<PendingEscortProfile | null>(null);
 const rejectionReason = ref("");
 const rejectionError = ref("");
+const { locale, t } = useI18n();
+
+const intlLocale = computed(() => (locale.value === "zh-CN" ? "zh-CN" : "en-US"));
 
 const user = computed<StoredUser>(() => {
   const rawUser = localStorage.getItem("user");
@@ -48,7 +52,7 @@ const displayName = computed(() => {
   const phone = user.value.phone;
 
   if (!phone || phone.length < 7) {
-    return "管理员";
+    return t("admin.userFallback");
   }
 
   return `${phone.slice(0, 3)}****${phone.slice(-4)}`;
@@ -85,7 +89,7 @@ function maskIdCard(idCardNo: string) {
 }
 
 function formatDate(value: string) {
-  return new Date(value).toLocaleString("zh-CN", {
+  return new Date(value).toLocaleString(intlLocale.value, {
     hour12: false,
   });
 }
@@ -98,7 +102,7 @@ async function approveProfile(profile: PendingEscortProfile) {
       action: "APPROVE",
       reason: "",
     });
-    alert("审核已通过");
+    alert(t("admin.approveSuccess"));
     await loadPendingProfiles();
   } finally {
     actionLoadingId.value = "";
@@ -127,7 +131,7 @@ async function submitReject() {
   const reason = rejectionReason.value.trim();
 
   if (!reason) {
-    rejectionError.value = "拒绝原因不能为空";
+    rejectionError.value = t("admin.rejectReasonRequired");
     return;
   }
 
@@ -142,7 +146,7 @@ async function submitReject() {
       action: "REJECT",
       reason,
     });
-    alert("已拒绝申请");
+    alert(t("admin.rejectSuccess"));
     rejectDialogOpen.value = false;
     rejectTarget.value = null;
     rejectionReason.value = "";
@@ -168,9 +172,9 @@ async function changePage(nextPage: number) {
     <header class="border-b border-slate-200 bg-white">
       <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-5">
         <div>
-          <p class="text-sm font-medium text-teal-700">Admin Console</p>
+          <p class="text-sm font-medium text-teal-700">{{ t("admin.console") }}</p>
           <h1 class="mt-1 text-2xl font-semibold tracking-normal text-slate-950">
-            陪诊员审核
+            {{ t("admin.title") }}
           </h1>
         </div>
         <UserNav :display-name="displayName" :user="user" />
@@ -180,43 +184,43 @@ async function changePage(nextPage: number) {
     <section class="mx-auto max-w-6xl px-4 py-10">
       <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 class="text-xl font-semibold text-slate-950">待审核申请</h2>
+          <h2 class="text-xl font-semibold text-slate-950">{{ t("admin.pendingTitle") }}</h2>
           <p class="mt-2 text-sm text-slate-500">
-            共 {{ total }} 条待处理记录
+            {{ t("admin.pendingTotal", { total }) }}
           </p>
         </div>
         <Button variant="outline" :disabled="loading" @click="loadPendingProfiles">
           <Loader2 v-if="loading" class="h-4 w-4 animate-spin" aria-hidden="true" />
           <ShieldCheck v-else class="h-4 w-4" aria-hidden="true" />
-          <span>刷新</span>
+          <span>{{ t("admin.refresh") }}</span>
         </Button>
       </div>
 
       <div class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         <div v-if="loading" class="flex items-center justify-center gap-2 px-4 py-16 text-sm text-slate-500">
           <Loader2 class="h-4 w-4 animate-spin" aria-hidden="true" />
-          <span>正在加载待审核申请...</span>
+          <span>{{ t("admin.loading") }}</span>
         </div>
 
         <div v-else-if="list.length === 0" class="px-4 py-16 text-center text-sm text-slate-500">
-          暂无待审核申请
+          {{ t("admin.empty") }}
         </div>
 
         <div v-else class="overflow-x-auto">
           <table class="w-full min-w-[760px] border-collapse text-left text-sm">
             <thead class="bg-slate-50 text-xs uppercase tracking-normal text-slate-500">
               <tr>
-                <th class="px-5 py-3 font-medium">用户昵称</th>
-                <th class="px-5 py-3 font-medium">手机号</th>
-                <th class="px-5 py-3 font-medium">身份证号</th>
-                <th class="px-5 py-3 font-medium">申请时间</th>
-                <th class="px-5 py-3 font-medium">操作</th>
+                <th class="px-5 py-3 font-medium">{{ t("admin.nickname") }}</th>
+                <th class="px-5 py-3 font-medium">{{ t("admin.phone") }}</th>
+                <th class="px-5 py-3 font-medium">{{ t("admin.idCard") }}</th>
+                <th class="px-5 py-3 font-medium">{{ t("admin.appliedAt") }}</th>
+                <th class="px-5 py-3 font-medium">{{ t("admin.actions") }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-200">
               <tr v-for="profile in list" :key="profile.id" class="hover:bg-slate-50/70">
                 <td class="px-5 py-4 font-medium text-slate-950">
-                  {{ profile.user.nickname || "未设置昵称" }}
+                  {{ profile.user.nickname || t("admin.nicknameFallback") }}
                 </td>
                 <td class="px-5 py-4 text-slate-600">{{ profile.user.phone }}</td>
                 <td class="px-5 py-4 font-mono text-slate-600">
@@ -239,7 +243,7 @@ async function changePage(nextPage: number) {
                         aria-hidden="true"
                       />
                       <Check v-else class="h-4 w-4" aria-hidden="true" />
-                      <span>通过</span>
+                      <span>{{ t("admin.approve") }}</span>
                     </Button>
                     <Button
                       size="sm"
@@ -249,7 +253,7 @@ async function changePage(nextPage: number) {
                       @click="openRejectDialog(profile)"
                     >
                       <X class="h-4 w-4" aria-hidden="true" />
-                      <span>拒绝</span>
+                      <span>{{ t("admin.reject") }}</span>
                     </Button>
                   </div>
                 </td>
@@ -260,13 +264,13 @@ async function changePage(nextPage: number) {
       </div>
 
       <div class="mt-5 flex items-center justify-end gap-3 text-sm text-slate-500">
-        <span>第 {{ page }} / {{ totalPages }} 页</span>
+        <span>{{ t("admin.pageInfo", { page, totalPages }) }}</span>
         <Button variant="outline" size="sm" :disabled="page <= 1 || loading" @click="changePage(page - 1)">
           <ChevronLeft class="h-4 w-4" aria-hidden="true" />
-          <span>上一页</span>
+          <span>{{ t("admin.previousPage") }}</span>
         </Button>
         <Button variant="outline" size="sm" :disabled="page >= totalPages || loading" @click="changePage(page + 1)">
-          <span>下一页</span>
+          <span>{{ t("admin.nextPage") }}</span>
           <ChevronRight class="h-4 w-4" aria-hidden="true" />
         </Button>
       </div>
@@ -280,19 +284,19 @@ async function changePage(nextPage: number) {
     >
       <section class="w-full max-w-md rounded-lg border border-slate-200 bg-white p-6 shadow-xl">
         <div class="mb-5">
-          <h2 class="text-lg font-semibold text-slate-950">拒绝申请</h2>
+          <h2 class="text-lg font-semibold text-slate-950">{{ t("admin.rejectTitle") }}</h2>
           <p class="mt-2 text-sm text-slate-500">
-            请填写拒绝原因，申请人可在个人申请状态中查看。
+            {{ t("admin.rejectDescription") }}
           </p>
         </div>
 
         <label class="block">
-          <span class="mb-2 block text-sm font-medium text-slate-700">拒绝原因</span>
+          <span class="mb-2 block text-sm font-medium text-slate-700">{{ t("admin.rejectReason") }}</span>
           <textarea
             v-model="rejectionReason"
             rows="4"
             class="w-full resize-none rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-            placeholder="请输入拒绝原因"
+            :placeholder="t('admin.rejectReasonPlaceholder')"
             @input="rejectionError = ''"
           />
         </label>
@@ -302,11 +306,11 @@ async function changePage(nextPage: number) {
 
         <div class="mt-6 flex justify-end gap-3">
           <Button variant="outline" :disabled="Boolean(actionLoadingId)" @click="closeRejectDialog">
-            取消
+            {{ t("common.cancel") }}
           </Button>
           <Button class="bg-red-600 text-white hover:bg-red-700" :disabled="Boolean(actionLoadingId)" @click="submitReject">
             <Loader2 v-if="actionLoadingId" class="h-4 w-4 animate-spin" aria-hidden="true" />
-            <span>确认拒绝</span>
+            <span>{{ t("admin.confirmReject") }}</span>
           </Button>
         </div>
       </section>

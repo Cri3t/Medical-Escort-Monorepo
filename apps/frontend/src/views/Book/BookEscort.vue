@@ -2,6 +2,7 @@
 import AMapLoader from "@amap/amap-jsapi-loader";
 import { MapPin, Search, X } from "lucide-vue-next";
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { getPublicProfiles } from "@/api/escort";
 import type { PublicEscortProfile } from "@/api/escort";
@@ -136,6 +137,7 @@ const escorts = ref<PublicEscortProfile[]>([]);
 const loading = ref(false);
 const submitLoading = ref(false);
 const router = useRouter();
+const { locale, t } = useI18n();
 const selectedEscort = ref<PublicEscortProfile | null>(null);
 const form = ref<OrderForm>(initialForm());
 
@@ -151,6 +153,7 @@ const mapInstanceRef = ref<AMapMapInstance | null>(null);
 const markersRef = ref<AMapMarkerInstance[]>([]);
 
 const isDialogOpen = computed(() => selectedEscort.value !== null);
+const intlLocale = computed(() => (locale.value === "zh-CN" ? "zh-CN" : "en-US"));
 
 onMounted(() => {
   void loadEscorts();
@@ -189,7 +192,7 @@ function resetForm() {
 }
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat(intlLocale.value, {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -197,7 +200,7 @@ function formatDate(value: string) {
 }
 
 function getEscortName(escort: PublicEscortProfile) {
-  return escort.user.nickname || "Unnamed Escort";
+  return escort.user.nickname || t("book.unnamedEscort");
 }
 
 async function openMapPicker() {
@@ -211,13 +214,12 @@ async function openMapPicker() {
 
 async function initMapPicker() {
   if (!AMAP_KEY || !AMAP_SECURITY_CODE) {
-    mapError.value =
-      "AMap key or security code is missing. Fill AMAP_KEY and AMAP_SECURITY_CODE in the component.";
+    mapError.value = t("book.missingMapConfig");
     return;
   }
 
   if (!mapContainerRef.value) {
-    mapError.value = "Map container is not ready.";
+    mapError.value = t("book.mapContainerNotReady");
     return;
   }
 
@@ -236,7 +238,7 @@ async function initMapPicker() {
     const amap = "Map" in loaderResult ? loaderResult : loaderResult.default;
 
     if (!amap) {
-      throw new Error("AMap API is unavailable.");
+      throw new Error(t("book.mapUnavailable"));
     }
 
     amapRef.value = amap;
@@ -248,8 +250,7 @@ async function initMapPicker() {
 
     locateAndSearchNearby();
   } catch {
-    mapError.value =
-      "Map failed to load. Please check the AMap key and network.";
+    mapError.value = t("book.mapLoadFailed");
     mapLoading.value = false;
   }
 }
@@ -276,7 +277,7 @@ function locateAndSearchNearby() {
     }
 
     mapLoading.value = false;
-    mapError.value = "Location failed. Search for a hospital manually.";
+    mapError.value = t("book.locationFailed");
   });
 }
 
@@ -315,7 +316,7 @@ function createPlaceSearch() {
   const amap = amapRef.value;
 
   if (!amap) {
-    mapError.value = "Map is not ready yet.";
+    mapError.value = t("book.mapNotReady");
     return null;
   }
 
@@ -337,7 +338,7 @@ function handleSearchResult(
   if (status !== "complete") {
     hospitalPois.value = [];
     clearMarkers();
-    mapError.value = "No hospitals found. Try another keyword.";
+    mapError.value = t("book.noHospitals");
     return;
   }
 
@@ -345,9 +346,7 @@ function handleSearchResult(
     (poi) => poi.name && poi.location,
   );
   hospitalPois.value = pois;
-  mapError.value = pois.length
-    ? ""
-    : "No hospitals found. Try another keyword.";
+  mapError.value = pois.length ? "" : t("book.noHospitals");
   renderMarkers(pois);
 }
 
@@ -428,7 +427,7 @@ async function handleSubmit() {
   }
 
   if (!selectedEscort.value) {
-    alert("Please select an escort");
+    alert(t("book.selectEscortAlert"));
     return;
   }
 
@@ -438,24 +437,24 @@ async function handleSubmit() {
   const remark = form.value.remark.trim();
 
   if (!hospitalName) {
-    alert("Please enter the hospital name");
+    alert(t("book.hospitalRequired"));
     return;
   }
 
   if (!serviceAt) {
-    alert("Please select a service time");
+    alert(t("book.serviceTimeRequired"));
     return;
   }
 
   const serviceDate = new Date(serviceAt);
 
   if (Number.isNaN(serviceDate.getTime())) {
-    alert("Please select a valid service time");
+    alert(t("book.invalidServiceTime"));
     return;
   }
 
   if (!Number.isFinite(amount) || amount < 0) {
-    alert("Please enter a valid booking amount");
+    alert(t("book.invalidAmount"));
     return;
   }
 
@@ -470,7 +469,7 @@ async function handleSubmit() {
       ...(remark ? { remark } : {}),
     });
 
-    alert("Booking created successfully");
+    alert(t("book.createSuccess"));
     await router.push("/orders");
   } finally {
     submitLoading.value = false;
@@ -482,9 +481,9 @@ async function handleSubmit() {
   <main class="min-h-screen bg-slate-50 px-4 py-8 text-slate-900">
     <section class="mx-auto max-w-6xl">
       <div class="mb-8">
-        <p class="text-sm font-medium text-teal-700">Book Escort Service</p>
+        <p class="text-sm font-medium text-teal-700">{{ t("book.eyebrow") }}</p>
         <h1 class="mt-2 text-3xl font-semibold tracking-normal text-slate-950">
-          Available Escorts
+          {{ t("book.title") }}
         </h1>
       </div>
 
@@ -505,7 +504,7 @@ async function handleSubmit() {
         v-else-if="escorts.length === 0"
         class="rounded-lg border border-dashed border-slate-300 bg-white px-6 py-12 text-center text-sm text-slate-500"
       >
-        No available escorts
+        {{ t("book.empty") }}
       </div>
 
       <div v-else class="grid grid-cols-1 gap-5 md:grid-cols-3">
@@ -525,7 +524,7 @@ async function handleSubmit() {
                 {{ getEscortName(escort) }}
               </h2>
               <p class="mt-1 text-sm text-slate-500">
-                Joined on: {{ formatDate(escort.createdAt) }}
+                {{ t("book.joinedOn", { date: formatDate(escort.createdAt) }) }}
               </p>
             </div>
           </div>
@@ -535,7 +534,7 @@ async function handleSubmit() {
             class="mt-8 w-full bg-teal-600 hover:bg-teal-700"
             @click="openDialog(escort)"
           >
-            Book
+            {{ t("book.book") }}
           </Button>
         </article>
       </div>
@@ -552,14 +551,14 @@ async function handleSubmit() {
             {{ selectedEscort ? getEscortName(selectedEscort) : "" }}
           </p>
           <h2 class="mt-1 text-xl font-semibold tracking-normal text-slate-950">
-            Book Escort Service
+            {{ t("book.dialogTitle") }}
           </h2>
         </div>
 
         <form class="space-y-5" @submit.prevent="handleSubmit">
           <label class="block">
             <span class="mb-2 block text-sm font-medium text-slate-700">
-              Hospital Name
+              {{ t("book.hospitalName") }}
             </span>
             <div class="relative">
               <input
@@ -567,12 +566,12 @@ async function handleSubmit() {
                 type="text"
                 autocomplete="off"
                 class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 pr-12 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                placeholder="Enter the hospital name"
+                :placeholder="t('book.hospitalPlaceholder')"
               />
               <button
                 type="button"
                 class="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-slate-500 transition hover:bg-teal-50 hover:text-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-200"
-                aria-label="Select hospital on map"
+                :aria-label="t('book.selectHospitalOnMap')"
                 @click="openMapPicker"
               >
                 <MapPin class="h-4 w-4" aria-hidden="true" />
@@ -582,7 +581,7 @@ async function handleSubmit() {
 
           <label class="block">
             <span class="mb-2 block text-sm font-medium text-slate-700">
-              Service Time
+              {{ t("book.serviceTime") }}
             </span>
             <input
               v-model="form.serviceAt"
@@ -593,7 +592,7 @@ async function handleSubmit() {
 
           <label class="block">
             <span class="mb-2 block text-sm font-medium text-slate-700">
-              Booking Amount
+              {{ t("book.bookingAmount") }}
             </span>
             <input
               v-model.number="form.amount"
@@ -606,13 +605,13 @@ async function handleSubmit() {
 
           <label class="block">
             <span class="mb-2 block text-sm font-medium text-slate-700">
-              Remark
+              {{ t("book.remark") }}
             </span>
             <textarea
               v-model="form.remark"
               rows="4"
               class="w-full resize-none rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-              placeholder="Add patient details, service needs, or other notes"
+              :placeholder="t('book.remarkPlaceholder')"
             ></textarea>
           </label>
 
@@ -625,14 +624,14 @@ async function handleSubmit() {
               :disabled="submitLoading"
               @click="closeDialog"
             >
-              Cancel
+              {{ t("common.cancel") }}
             </Button>
             <Button
               type="submit"
               class="bg-teal-600 hover:bg-teal-700"
               :disabled="submitLoading"
             >
-              {{ submitLoading ? "Submitting..." : "Confirm Booking" }}
+              {{ submitLoading ? t("common.submitting") : t("book.confirmBooking") }}
             </Button>
           </div>
         </form>
@@ -651,16 +650,16 @@ async function handleSubmit() {
         >
           <div>
             <h2 class="text-base font-semibold text-slate-950">
-              Select Hospital
+              {{ t("book.selectHospital") }}
             </h2>
             <p class="mt-1 text-xs text-slate-500">
-              Choose a nearby hospital or search manually.
+              {{ t("book.mapDescription") }}
             </p>
           </div>
           <button
             type="button"
             class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-300"
-            aria-label="Close map picker"
+            :aria-label="t('book.closeMapPicker')"
             @click="closeMapPicker"
           >
             <X class="h-4 w-4" aria-hidden="true" />
@@ -677,7 +676,7 @@ async function handleSubmit() {
               v-if="mapLoading"
               class="absolute inset-0 flex items-center justify-center bg-white/80 text-sm font-medium text-slate-700"
             >
-              Loading map...
+              {{ t("book.loadingMap") }}
             </div>
           </div>
 
@@ -690,7 +689,7 @@ async function handleSubmit() {
                   v-model="manualSearchKeyword"
                   type="text"
                   class="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                  placeholder="Search hospital name"
+                  :placeholder="t('book.searchHospitalPlaceholder')"
                 />
                 <Button
                   type="submit"
@@ -714,7 +713,7 @@ async function handleSubmit() {
                 v-if="!mapLoading && hospitalPois.length === 0"
                 class="px-1 py-6 text-center text-sm text-slate-500"
               >
-                No hospitals found. Try another keyword.
+                {{ t("book.noHospitals") }}
               </p>
 
               <button
@@ -733,7 +732,7 @@ async function handleSubmit() {
                   {{ poi.name }}
                 </span>
                 <span class="mt-1 block text-xs leading-5 text-slate-500">
-                  {{ poi.address || "No address available" }}
+                  {{ poi.address || t("book.noAddress") }}
                 </span>
               </button>
             </div>
