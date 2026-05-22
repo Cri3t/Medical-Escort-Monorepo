@@ -1,10 +1,4 @@
 import { createRouter, createWebHistory } from "vue-router";
-import EscortReviews from "../views/Admin/EscortReviews.vue";
-import AuthPage from "../views/Auth/AuthPage.vue";
-import BookEscort from "../views/Book/BookEscort.vue";
-import HomeView from "../views/Home/HomeView.vue";
-import OrderList from "../views/Order/OrderList.vue";
-import ApplyEscort from "../views/Profile/ApplyEscort.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -12,12 +6,12 @@ const router = createRouter({
     {
       path: "/auth",
       name: "auth",
-      component: AuthPage,
+      component: () => import("../views/Auth/AuthPage.vue"),
     },
     {
       path: "/",
       name: "home",
-      component: HomeView,
+      component: () => import("../views/Home/HomeView.vue"),
       meta: {
         requiresAuth: true,
       },
@@ -25,7 +19,7 @@ const router = createRouter({
     {
       path: "/profile/apply",
       name: "profile-apply",
-      component: ApplyEscort,
+      component: () => import("../views/Profile/ApplyEscort.vue"),
       meta: {
         requiresAuth: true,
       },
@@ -33,7 +27,7 @@ const router = createRouter({
     {
       path: "/book",
       name: "BookEscort",
-      component: BookEscort,
+      component: () => import("../views/Book/BookEscort.vue"),
       meta: {
         requiresAuth: true,
       },
@@ -41,7 +35,7 @@ const router = createRouter({
     {
       path: "/orders",
       name: "OrderList",
-      component: OrderList,
+      component: () => import("../views/Order/OrderList.vue"),
       meta: {
         requiresAuth: true,
       },
@@ -49,7 +43,7 @@ const router = createRouter({
     {
       path: "/admin/escort-reviews",
       name: "AdminEscortReviews",
-      component: EscortReviews,
+      component: () => import("../views/Admin/EscortReviews.vue"),
       meta: {
         requiresAuth: true,
         requiresAdmin: true,
