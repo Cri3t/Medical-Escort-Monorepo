@@ -2,6 +2,7 @@
 import { onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import PageHeader from "@/components/PageHeader/PageHeader.vue";
 import request from "../../utils/request";
 
 interface EscortProfile {
@@ -66,44 +67,77 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <main class="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10 text-slate-900">
-    <section class="w-full max-w-md rounded-lg border border-slate-200 bg-white p-8 shadow-lg shadow-slate-200/70">
-      <div class="mb-8 text-center">
-        <p class="mb-3 text-sm font-medium text-teal-700">
-          {{ t("applyEscort.eyebrow") }}
-        </p>
-        <h1 class="text-3xl font-semibold tracking-normal text-slate-950">
-          {{ t("applyEscort.title") }}
-        </h1>
-      </div>
+  <main class="apply-page">
+    <PageHeader :eyebrow="t('applyEscort.eyebrow')" :title="t('applyEscort.title')" width="narrow" />
 
-      <div v-if="checkingProfile" class="rounded-lg bg-slate-50 px-4 py-5 text-center text-sm text-slate-500">
-        {{ t("applyEscort.checking") }}
-      </div>
+    <div class="apply-page__body">
+      <section class="apply-card">
+        <div v-if="checkingProfile" class="apply-status">
+          {{ t("applyEscort.checking") }}
+        </div>
 
-      <form v-else class="space-y-6" @submit.prevent="handleSubmit">
-        <label class="block">
-          <span class="mb-2 block text-sm font-medium text-slate-700">
-            {{ t("applyEscort.idCardLabel") }}
-          </span>
-          <input
-            v-model="idCardNo"
-            type="text"
-            maxlength="18"
-            autocomplete="off"
-            :placeholder="t('applyEscort.idCardPlaceholder')"
-            class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-          />
-        </label>
+        <form v-else class="apply-form" @submit.prevent="handleSubmit">
+          <label class="apply-field">
+            <span class="apply-field__label">
+              {{ t("applyEscort.idCardLabel") }}
+            </span>
+            <input
+              v-model="idCardNo"
+              type="text"
+              maxlength="18"
+              autocomplete="off"
+              :placeholder="t('applyEscort.idCardPlaceholder')"
+              class="apply-field__input"
+            />
+          </label>
 
-        <button
-          type="submit"
-          :disabled="loading"
-          class="w-full rounded-lg bg-teal-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-600/20 transition hover:bg-teal-700 focus:outline-none focus:ring-4 focus:ring-teal-200 disabled:cursor-not-allowed disabled:bg-teal-400"
-        >
-          {{ loading ? t("applyEscort.submitting") : t("applyEscort.submit") }}
-        </button>
-      </form>
-    </section>
+          <button
+            type="submit"
+            :disabled="loading"
+            class="apply-submit"
+          >
+            {{ loading ? t("applyEscort.submitting") : t("applyEscort.submit") }}
+          </button>
+        </form>
+      </section>
+    </div>
   </main>
 </template>
+
+<style scoped>
+.apply-page {
+  @apply min-h-screen bg-slate-50 text-slate-900;
+}
+
+.apply-page__body {
+  @apply flex min-h-[calc(100vh-73px)] items-center justify-center px-4 py-10;
+}
+
+.apply-card {
+  @apply w-full max-w-md rounded-lg border border-slate-200 bg-white p-8 shadow-lg shadow-slate-200/70;
+}
+
+.apply-status {
+  @apply rounded-lg bg-slate-50 px-4 py-5 text-center text-sm text-slate-500;
+}
+
+.apply-form {
+  @apply space-y-6;
+}
+
+.apply-field {
+  @apply block;
+}
+
+.apply-field__label {
+  @apply mb-2 block text-sm font-medium text-slate-700;
+}
+
+.apply-field__input {
+  @apply w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100;
+}
+
+.apply-submit {
+  @apply w-full rounded-lg bg-teal-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-600/20 transition hover:bg-teal-700 focus:outline-none focus:ring-4 focus:ring-teal-200 disabled:cursor-not-allowed disabled:bg-teal-400;
+}
+</style>

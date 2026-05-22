@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { ClipboardCheck } from "lucide-vue-next";
 import { useRouter } from "vue-router";
+import PageHeader from "@/components/PageHeader/PageHeader.vue";
 import UserNav from "@/components/UserNav.vue";
 import request from "@/utils/request";
 
@@ -185,104 +186,80 @@ function goEscortReviews() {
 </script>
 
 <template>
-  <main class="min-h-screen bg-slate-50 text-slate-900">
-    <header class="border-b border-slate-200 bg-white">
-      <div
-        class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-5"
-      >
-        <div>
-          <p class="text-sm font-medium text-teal-700">
-            {{ t("home.platform") }}
-          </p>
-          <h1
-            class="mt-1 text-2xl font-semibold tracking-normal text-slate-950"
-          >
-            {{ t("home.pageTitle") }}
-          </h1>
-        </div>
+  <main class="home-page">
+    <PageHeader :eyebrow="t('home.platform')" :title="t('home.pageTitle')">
+      <template #actions>
         <UserNav :display-name="displayName" :user="user" />
-      </div>
-    </header>
+      </template>
+    </PageHeader>
 
-    <section class="mx-auto max-w-6xl px-4 py-10">
-      <div class="mb-8">
-        <h2 class="text-xl font-semibold text-slate-950">
+    <section class="home-section">
+      <div class="home-section__header">
+        <h2 class="home-section__title">
           {{ t("home.sectionTitle") }}
         </h2>
-        <p class="mt-2 text-sm text-slate-500">
+        <p class="home-section__description">
           {{ t("home.sectionDescription") }}
         </p>
       </div>
 
-      <div class="grid gap-5 md:grid-cols-3">
-        <article
-          class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
-        >
-          <div
-            class="mb-5 flex h-12 w-12 items-center justify-center rounded-lg bg-teal-50 text-xl text-teal-700"
-          >
+      <div class="home-card-grid">
+        <article class="home-feature-card">
+          <div class="home-feature-card__icon home-feature-card__icon--booking">
             +
           </div>
-          <h3 class="text-lg font-semibold text-slate-950">
+          <h3 class="home-feature-card__title">
             {{ t("home.bookingTitle") }}
           </h3>
-          <p class="mt-2 text-sm leading-6 text-slate-500">
+          <p class="home-feature-card__description">
             {{ t("home.bookingDescription") }}
           </p>
           <button
             type="button"
-            class="mt-6 w-full rounded-lg bg-teal-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-600/20 transition hover:bg-teal-700 focus:outline-none focus:ring-4 focus:ring-teal-200"
+            class="home-action home-action--booking"
             @click="goBookEscort"
           >
             {{ t("home.bookingButton") }}
           </button>
         </article>
 
-        <article
-          class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
-        >
-          <div
-            class="mb-5 flex h-12 w-12 items-center justify-center rounded-lg bg-orange-50 text-xl text-orange-700"
-          >
+        <article class="home-feature-card">
+          <div class="home-feature-card__icon home-feature-card__icon--orders">
             #
           </div>
-          <h3 class="text-lg font-semibold text-slate-950">
+          <h3 class="home-feature-card__title">
             {{ t("home.orderTitle") }}
           </h3>
-          <p class="mt-2 text-sm leading-6 text-slate-500">
+          <p class="home-feature-card__description">
             {{ t("home.orderDescription") }}
           </p>
           <button
             type="button"
-            class="mt-6 w-full rounded-lg bg-orange-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-600/20 transition hover:bg-orange-700 focus:outline-none focus:ring-4 focus:ring-orange-200"
+            class="home-action home-action--orders"
             @click="goMyOrders"
           >
             {{ t("home.orderButton") }}
           </button>
         </article>
 
-        <article
-          class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
-        >
-          <div
-            class="mb-5 flex h-12 w-12 items-center justify-center rounded-lg bg-cyan-50 text-xl text-cyan-700"
-          >
+        <article class="home-feature-card">
+          <div class="home-feature-card__icon home-feature-card__icon--escort">
             ✓
           </div>
-          <h3 class="text-lg font-semibold text-slate-950">
+          <h3 class="home-feature-card__title">
             {{ escortCardTitle }}
           </h3>
-          <p class="mt-2 text-sm leading-6 text-slate-500">
+          <p class="home-feature-card__description">
             {{ escortCardDescription }}
           </p>
           <button
             type="button"
             :disabled="escortActionDisabled"
-            class="mt-6 w-full rounded-lg px-4 py-3 text-sm font-semibold transition focus:outline-none focus:ring-4"
+            class="home-action"
             :class="
               escortActionDisabled
-                ? 'cursor-not-allowed bg-slate-200 text-slate-500'
-                : 'bg-teal-600 text-white shadow-lg shadow-teal-600/20 hover:bg-teal-700 focus:ring-teal-200'
+                ? 'home-action--disabled'
+                : 'home-action--escort'
             "
             @click="goApplyEscort"
           >
@@ -292,22 +269,20 @@ function goEscortReviews() {
 
         <article
           v-if="isAdmin"
-          class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+          class="home-feature-card"
         >
-          <div
-            class="mb-5 flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-50 text-xl text-indigo-700"
-          >
-            <ClipboardCheck class="h-6 w-6" aria-hidden="true" />
+          <div class="home-feature-card__icon home-feature-card__icon--admin">
+            <ClipboardCheck class="home-feature-card__svg" aria-hidden="true" />
           </div>
-          <h3 class="text-lg font-semibold text-slate-950">
+          <h3 class="home-feature-card__title">
             {{ t("home.adminReviewTitle") }}
           </h3>
-          <p class="mt-2 text-sm leading-6 text-slate-500">
+          <p class="home-feature-card__description">
             {{ t("home.adminReviewDescription") }}
           </p>
           <button
             type="button"
-            class="mt-6 w-full rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-200"
+            class="home-action home-action--admin"
             @click="goEscortReviews"
           >
             {{ t("home.adminReviewButton") }}
@@ -317,3 +292,86 @@ function goEscortReviews() {
     </section>
   </main>
 </template>
+
+<style scoped>
+.home-page {
+  @apply min-h-screen bg-slate-50 text-slate-900;
+}
+
+.home-section {
+  @apply mx-auto max-w-6xl px-4 py-10;
+}
+
+.home-section__header {
+  @apply mb-8;
+}
+
+.home-section__title {
+  @apply text-xl font-semibold text-slate-950;
+}
+
+.home-section__description {
+  @apply mt-2 text-sm text-slate-500;
+}
+
+.home-card-grid {
+  @apply grid gap-5 md:grid-cols-3;
+}
+
+.home-feature-card {
+  @apply rounded-lg border border-slate-200 bg-white p-6 shadow-sm;
+}
+
+.home-feature-card__icon {
+  @apply mb-5 flex h-12 w-12 items-center justify-center rounded-lg text-xl;
+}
+
+.home-feature-card__icon--booking {
+  @apply bg-teal-50 text-teal-700;
+}
+
+.home-feature-card__icon--orders {
+  @apply bg-orange-50 text-orange-700;
+}
+
+.home-feature-card__icon--escort {
+  @apply bg-cyan-50 text-cyan-700;
+}
+
+.home-feature-card__icon--admin {
+  @apply bg-indigo-50 text-indigo-700;
+}
+
+.home-feature-card__svg {
+  @apply h-6 w-6;
+}
+
+.home-feature-card__title {
+  @apply text-lg font-semibold text-slate-950;
+}
+
+.home-feature-card__description {
+  @apply mt-2 text-sm leading-6 text-slate-500;
+}
+
+.home-action {
+  @apply mt-6 w-full rounded-lg px-4 py-3 text-sm font-semibold transition focus:outline-none focus:ring-4;
+}
+
+.home-action--booking,
+.home-action--escort {
+  @apply bg-teal-600 text-white shadow-lg shadow-teal-600/20 hover:bg-teal-700 focus:ring-teal-200;
+}
+
+.home-action--orders {
+  @apply bg-orange-600 text-white shadow-lg shadow-orange-600/20 hover:bg-orange-700 focus:ring-orange-200;
+}
+
+.home-action--admin {
+  @apply bg-indigo-600 text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 focus:ring-indigo-200;
+}
+
+.home-action--disabled {
+  @apply cursor-not-allowed bg-slate-200 text-slate-500;
+}
+</style>

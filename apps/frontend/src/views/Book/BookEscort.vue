@@ -7,6 +7,7 @@ import { useRouter } from "vue-router";
 import { getPublicProfiles } from "@/api/escort";
 import type { PublicEscortProfile } from "@/api/escort";
 import { createOrder } from "@/api/order";
+import PageHeader from "@/components/PageHeader/PageHeader.vue";
 import { Button } from "@/components/ui/button";
 
 declare global {
@@ -478,52 +479,45 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <main class="min-h-screen bg-slate-50 px-4 py-8 text-slate-900">
-    <section class="mx-auto max-w-6xl">
-      <div class="mb-8">
-        <p class="text-sm font-medium text-teal-700">{{ t("book.eyebrow") }}</p>
-        <h1 class="mt-2 text-3xl font-semibold tracking-normal text-slate-950">
-          {{ t("book.title") }}
-        </h1>
-      </div>
+  <main class="book-page">
+    <PageHeader :eyebrow="t('book.eyebrow')" :title="t('book.title')" />
 
-      <div v-if="loading" class="grid grid-cols-1 gap-5 md:grid-cols-3">
+    <section class="book-shell">
+      <div v-if="loading" class="book-card-grid">
         <div
           v-for="index in 6"
           :key="index"
-          class="h-56 animate-pulse rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+          class="book-skeleton-card"
         >
-          <div class="h-14 w-14 rounded-full bg-slate-200"></div>
-          <div class="mt-6 h-5 w-32 rounded bg-slate-200"></div>
-          <div class="mt-3 h-4 w-44 rounded bg-slate-100"></div>
-          <div class="mt-8 h-10 rounded bg-slate-200"></div>
+          <div class="book-skeleton-card__avatar"></div>
+          <div class="book-skeleton-card__title"></div>
+          <div class="book-skeleton-card__text"></div>
+          <div class="book-skeleton-card__button"></div>
         </div>
       </div>
 
       <div
         v-else-if="escorts.length === 0"
-        class="rounded-lg border border-dashed border-slate-300 bg-white px-6 py-12 text-center text-sm text-slate-500"
+        class="book-empty"
       >
         {{ t("book.empty") }}
       </div>
 
-      <div v-else class="grid grid-cols-1 gap-5 md:grid-cols-3">
+      <div v-else class="book-card-grid">
         <article
           v-for="escort in escorts"
           :key="escort.id"
-          class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+          class="book-escort-card"
         >
-          <div class="flex items-center gap-4">
-            <div
-              class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-teal-50 text-lg font-semibold text-teal-700"
-            >
+          <div class="book-escort-card__profile">
+            <div class="book-escort-card__avatar">
               {{ getEscortName(escort).slice(0, 1) }}
             </div>
-            <div class="min-w-0">
-              <h2 class="truncate text-lg font-semibold text-slate-950">
+            <div class="book-escort-card__info">
+              <h2 class="book-escort-card__name">
                 {{ getEscortName(escort) }}
               </h2>
-              <p class="mt-1 text-sm text-slate-500">
+              <p class="book-escort-card__meta">
                 {{ t("book.joinedOn", { date: formatDate(escort.createdAt) }) }}
               </p>
             </div>
@@ -531,7 +525,7 @@ async function handleSubmit() {
 
           <Button
             type="button"
-            class="mt-8 w-full bg-teal-600 hover:bg-teal-700"
+            class="book-card-button"
             @click="openDialog(escort)"
           >
             {{ t("book.book") }}
@@ -542,56 +536,56 @@ async function handleSubmit() {
 
     <div
       v-if="isDialogOpen"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-6"
+      class="book-dialog-backdrop"
       @click.self="closeDialog"
     >
-      <section class="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
-        <div class="mb-6">
-          <p class="text-sm font-medium text-teal-700">
+      <section class="book-dialog">
+        <div class="book-dialog__header">
+          <p class="book-dialog__eyebrow">
             {{ selectedEscort ? getEscortName(selectedEscort) : "" }}
           </p>
-          <h2 class="mt-1 text-xl font-semibold tracking-normal text-slate-950">
+          <h2 class="book-dialog__title">
             {{ t("book.dialogTitle") }}
           </h2>
         </div>
 
-        <form class="space-y-5" @submit.prevent="handleSubmit">
-          <label class="block">
-            <span class="mb-2 block text-sm font-medium text-slate-700">
+        <form class="book-form" @submit.prevent="handleSubmit">
+          <label class="book-field">
+            <span class="book-field__label">
               {{ t("book.hospitalName") }}
             </span>
-            <div class="relative">
+            <div class="book-field__control">
               <input
                 v-model="form.hospitalName"
                 type="text"
                 autocomplete="off"
-                class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 pr-12 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                class="book-field__input book-field__input--with-action"
                 :placeholder="t('book.hospitalPlaceholder')"
               />
               <button
                 type="button"
-                class="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-slate-500 transition hover:bg-teal-50 hover:text-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-200"
+                class="book-field__map-button"
                 :aria-label="t('book.selectHospitalOnMap')"
                 @click="openMapPicker"
               >
-                <MapPin class="h-4 w-4" aria-hidden="true" />
+                <MapPin class="book-icon" aria-hidden="true" />
               </button>
             </div>
           </label>
 
-          <label class="block">
-            <span class="mb-2 block text-sm font-medium text-slate-700">
+          <label class="book-field">
+            <span class="book-field__label">
               {{ t("book.serviceTime") }}
             </span>
             <input
               v-model="form.serviceAt"
               type="datetime-local"
-              class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+              class="book-field__input"
             />
           </label>
 
-          <label class="block">
-            <span class="mb-2 block text-sm font-medium text-slate-700">
+          <label class="book-field">
+            <span class="book-field__label">
               {{ t("book.bookingAmount") }}
             </span>
             <input
@@ -599,25 +593,23 @@ async function handleSubmit() {
               type="number"
               min="0"
               step="0.01"
-              class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+              class="book-field__input"
             />
           </label>
 
-          <label class="block">
-            <span class="mb-2 block text-sm font-medium text-slate-700">
+          <label class="book-field">
+            <span class="book-field__label">
               {{ t("book.remark") }}
             </span>
             <textarea
               v-model="form.remark"
               rows="4"
-              class="w-full resize-none rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+              class="book-field__textarea"
               :placeholder="t('book.remarkPlaceholder')"
             ></textarea>
           </label>
 
-          <div
-            class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end"
-          >
+          <div class="book-dialog__actions">
             <Button
               type="button"
               variant="outline"
@@ -628,7 +620,7 @@ async function handleSubmit() {
             </Button>
             <Button
               type="submit"
-              class="bg-teal-600 hover:bg-teal-700"
+              class="book-submit-button"
               :disabled="submitLoading"
             >
               {{ submitLoading ? t("common.submitting") : t("book.confirmBooking") }}
@@ -640,78 +632,72 @@ async function handleSubmit() {
 
     <div
       v-if="isMapPickerOpen"
-      class="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/70 px-3 py-4"
+      class="map-picker-backdrop"
     >
-      <section
-        class="flex h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg bg-white shadow-2xl"
-      >
-        <header
-          class="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3"
-        >
+      <section class="map-picker">
+        <header class="map-picker__header">
           <div>
-            <h2 class="text-base font-semibold text-slate-950">
+            <h2 class="map-picker__title">
               {{ t("book.selectHospital") }}
             </h2>
-            <p class="mt-1 text-xs text-slate-500">
+            <p class="map-picker__description">
               {{ t("book.mapDescription") }}
             </p>
           </div>
           <button
             type="button"
-            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-300"
+            class="map-picker__close"
             :aria-label="t('book.closeMapPicker')"
             @click="closeMapPicker"
           >
-            <X class="h-4 w-4" aria-hidden="true" />
+            <X class="book-icon" aria-hidden="true" />
           </button>
         </header>
 
-        <div class="grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[1fr_320px]">
-          <div class="relative min-h-[320px]">
+        <div class="map-picker__body">
+          <div class="map-picker__map-pane">
             <div
               ref="mapContainerRef"
-              class="h-[52vh] min-h-[320px] w-full md:h-full"
+              class="map-picker__map"
             ></div>
             <div
               v-if="mapLoading"
-              class="absolute inset-0 flex items-center justify-center bg-white/80 text-sm font-medium text-slate-700"
+              class="map-picker__loading"
             >
               {{ t("book.loadingMap") }}
             </div>
           </div>
 
-          <aside
-            class="flex min-h-0 flex-col border-t border-slate-200 md:border-l md:border-t-0"
-          >
-            <div class="space-y-3 border-b border-slate-200 p-4">
-              <form class="flex gap-2" @submit.prevent="handleManualSearch">
+          <aside class="map-picker__side-panel">
+            <div class="map-picker__search-panel">
+              <form class="map-picker__search-form" @submit.prevent="handleManualSearch">
                 <input
                   v-model="manualSearchKeyword"
                   type="text"
-                  class="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                  class="map-picker__search-input"
                   :placeholder="t('book.searchHospitalPlaceholder')"
                 />
                 <Button
                   type="submit"
                   size="icon"
-                  class="bg-teal-600 hover:bg-teal-700"
+                  class="map-picker__search-button"
                   :disabled="mapLoading"
                 >
-                  <Search class="h-4 w-4" aria-hidden="true" />
+                  <Search class="book-icon" aria-hidden="true" />
                 </Button>
               </form>
               <p
                 v-if="mapError"
-                class="rounded-lg bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800"
+                class="map-picker__error"
               >
                 {{ mapError }}
               </p>
             </div>
 
-            <div class="min-h-0 flex-1 overflow-y-auto p-3">
+            <div class="map-picker__results">
               <p
                 v-if="!mapLoading && hospitalPois.length === 0"
-                class="px-1 py-6 text-center text-sm text-slate-500"
+                class="map-picker__empty"
               >
                 {{ t("book.noHospitals") }}
               </p>
@@ -720,18 +706,18 @@ async function handleSubmit() {
                 v-for="poi in hospitalPois"
                 :key="getPoiKey(poi)"
                 type="button"
-                class="mb-2 w-full rounded-lg border px-3 py-3 text-left transition hover:border-teal-300 hover:bg-teal-50"
+                class="map-picker__result"
                 :class="
                   selectedHospitalId === getPoiKey(poi)
-                    ? 'border-teal-500 bg-teal-50'
-                    : 'border-slate-200 bg-white'
+                    ? 'map-picker__result--selected'
+                    : 'map-picker__result--idle'
                 "
                 @click="selectHospital(poi)"
               >
-                <span class="block text-sm font-semibold text-slate-950">
+                <span class="map-picker__result-name">
                   {{ poi.name }}
                 </span>
-                <span class="mt-1 block text-xs leading-5 text-slate-500">
+                <span class="map-picker__result-address">
                   {{ poi.address || t("book.noAddress") }}
                 </span>
               </button>
@@ -742,3 +728,225 @@ async function handleSubmit() {
     </div>
   </main>
 </template>
+
+<style scoped>
+.book-page {
+  @apply min-h-screen bg-slate-50 text-slate-900;
+}
+
+.book-shell {
+  @apply mx-auto max-w-6xl px-4 py-8;
+}
+
+.book-card-grid {
+  @apply grid grid-cols-1 gap-5 md:grid-cols-3;
+}
+
+.book-skeleton-card {
+  @apply h-56 animate-pulse rounded-lg border border-slate-200 bg-white p-6 shadow-sm;
+}
+
+.book-skeleton-card__avatar {
+  @apply h-14 w-14 rounded-full bg-slate-200;
+}
+
+.book-skeleton-card__title {
+  @apply mt-6 h-5 w-32 rounded bg-slate-200;
+}
+
+.book-skeleton-card__text {
+  @apply mt-3 h-4 w-44 rounded bg-slate-100;
+}
+
+.book-skeleton-card__button {
+  @apply mt-8 h-10 rounded bg-slate-200;
+}
+
+.book-empty {
+  @apply rounded-lg border border-dashed border-slate-300 bg-white px-6 py-12 text-center text-sm text-slate-500;
+}
+
+.book-escort-card {
+  @apply rounded-lg border border-slate-200 bg-white p-6 shadow-sm;
+}
+
+.book-escort-card__profile {
+  @apply flex items-center gap-4;
+}
+
+.book-escort-card__avatar {
+  @apply flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-teal-50 text-lg font-semibold text-teal-700;
+}
+
+.book-escort-card__info {
+  @apply min-w-0;
+}
+
+.book-escort-card__name {
+  @apply truncate text-lg font-semibold text-slate-950;
+}
+
+.book-escort-card__meta {
+  @apply mt-1 text-sm text-slate-500;
+}
+
+.book-card-button {
+  @apply mt-8 w-full bg-teal-600 hover:bg-teal-700;
+}
+
+.book-dialog-backdrop {
+  @apply fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-6;
+}
+
+.book-dialog {
+  @apply w-full max-w-lg rounded-lg bg-white p-6 shadow-xl;
+}
+
+.book-dialog__header {
+  @apply mb-6;
+}
+
+.book-dialog__eyebrow {
+  @apply text-sm font-medium text-teal-700;
+}
+
+.book-dialog__title {
+  @apply mt-1 text-xl font-semibold tracking-normal text-slate-950;
+}
+
+.book-form {
+  @apply space-y-5;
+}
+
+.book-field {
+  @apply block;
+}
+
+.book-field__label {
+  @apply mb-2 block text-sm font-medium text-slate-700;
+}
+
+.book-field__control {
+  @apply relative;
+}
+
+.book-field__input {
+  @apply w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100;
+}
+
+.book-field__input--with-action {
+  @apply pr-12;
+}
+
+.book-field__map-button {
+  @apply absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-slate-500 transition hover:bg-teal-50 hover:text-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-200;
+}
+
+.book-field__textarea {
+  @apply w-full resize-none rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100;
+}
+
+.book-dialog__actions {
+  @apply flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end;
+}
+
+.book-submit-button {
+  @apply bg-teal-600 hover:bg-teal-700;
+}
+
+.book-icon {
+  @apply h-4 w-4;
+}
+
+.map-picker-backdrop {
+  @apply fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/70 px-3 py-4;
+}
+
+.map-picker {
+  @apply flex h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg bg-white shadow-2xl;
+}
+
+.map-picker__header {
+  @apply flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3;
+}
+
+.map-picker__title {
+  @apply text-base font-semibold text-slate-950;
+}
+
+.map-picker__description {
+  @apply mt-1 text-xs text-slate-500;
+}
+
+.map-picker__close {
+  @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-300;
+}
+
+.map-picker__body {
+  @apply grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[1fr_320px];
+}
+
+.map-picker__map-pane {
+  @apply relative min-h-[320px];
+}
+
+.map-picker__map {
+  @apply h-[52vh] min-h-[320px] w-full md:h-full;
+}
+
+.map-picker__loading {
+  @apply absolute inset-0 flex items-center justify-center bg-white/80 text-sm font-medium text-slate-700;
+}
+
+.map-picker__side-panel {
+  @apply flex min-h-0 flex-col border-t border-slate-200 md:border-l md:border-t-0;
+}
+
+.map-picker__search-panel {
+  @apply space-y-3 border-b border-slate-200 p-4;
+}
+
+.map-picker__search-form {
+  @apply flex gap-2;
+}
+
+.map-picker__search-input {
+  @apply min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100;
+}
+
+.map-picker__search-button {
+  @apply bg-teal-600 hover:bg-teal-700;
+}
+
+.map-picker__error {
+  @apply rounded-lg bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800;
+}
+
+.map-picker__results {
+  @apply min-h-0 flex-1 overflow-y-auto p-3;
+}
+
+.map-picker__empty {
+  @apply px-1 py-6 text-center text-sm text-slate-500;
+}
+
+.map-picker__result {
+  @apply mb-2 w-full rounded-lg border px-3 py-3 text-left transition hover:border-teal-300 hover:bg-teal-50;
+}
+
+.map-picker__result--selected {
+  @apply border-teal-500 bg-teal-50;
+}
+
+.map-picker__result--idle {
+  @apply border-slate-200 bg-white;
+}
+
+.map-picker__result-name {
+  @apply block text-sm font-semibold text-slate-950;
+}
+
+.map-picker__result-address {
+  @apply mt-1 block text-xs leading-5 text-slate-500;
+}
+</style>

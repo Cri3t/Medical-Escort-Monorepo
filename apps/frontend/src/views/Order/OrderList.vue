@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import PageHeader from "@/components/PageHeader/PageHeader.vue";
 import UserNav from "@/components/UserNav.vue";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,23 +32,23 @@ type EditMode = "remark" | "amount";
 const statusMap: Record<OrderStatus, StatusMeta> = {
   PENDING_PAYMENT: {
     labelKey: "orders.status.pendingPayment",
-    className: "bg-orange-50 text-orange-700 ring-orange-200",
+    className: "order-status--pending-payment",
   },
   PENDING_ACCEPT: {
     labelKey: "orders.status.pendingAccept",
-    className: "bg-sky-50 text-sky-700 ring-sky-200",
+    className: "order-status--pending-accept",
   },
   IN_SERVICE: {
     labelKey: "orders.status.inService",
-    className: "bg-blue-50 text-blue-700 ring-blue-200",
+    className: "order-status--in-service",
   },
   COMPLETED: {
     labelKey: "orders.status.completed",
-    className: "bg-green-50 text-green-700 ring-green-200",
+    className: "order-status--completed",
   },
   CANCELLED: {
     labelKey: "orders.status.cancelled",
-    className: "bg-slate-100 text-slate-600 ring-slate-200",
+    className: "order-status--cancelled",
   },
 };
 
@@ -335,95 +336,88 @@ async function handleReject(order: Order) {
 </script>
 
 <template>
-  <main class="min-h-screen bg-slate-50 text-slate-900">
-    <header class="border-b border-slate-200 bg-white">
-      <div
-        class="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-5"
-      >
-        <h1 class="text-2xl font-semibold tracking-normal text-slate-950">
-          {{ t("orders.title") }}
-        </h1>
+  <main class="orders-page">
+    <PageHeader :title="t('orders.title')" width="narrow">
+      <template #actions>
         <UserNav :display-name="displayName" :user="user" />
-      </div>
-    </header>
+      </template>
+    </PageHeader>
 
-    <section class="container mx-auto max-w-4xl px-4 py-8">
-      <div v-if="loading" class="space-y-4">
+    <section class="orders-content">
+      <div v-if="loading" class="orders-list">
         <article
           v-for="index in 3"
           :key="index"
-          class="animate-pulse rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+          class="order-skeleton-card"
         >
-          <div class="h-5 w-48 rounded bg-slate-200"></div>
-          <div class="mt-6 h-4 w-full rounded bg-slate-100"></div>
-          <div class="mt-3 h-4 w-2/3 rounded bg-slate-100"></div>
+          <div class="order-skeleton-card__title"></div>
+          <div class="order-skeleton-card__line"></div>
+          <div class="order-skeleton-card__short-line"></div>
         </article>
       </div>
 
       <div
         v-else-if="orders.length === 0"
-        class="rounded-lg border border-dashed border-slate-300 bg-white px-6 py-12 text-center"
+        class="orders-empty"
       >
-        <p class="text-base font-medium text-slate-700">{{ t("orders.emptyTitle") }}</p>
-        <p class="mt-2 text-sm text-slate-500">
+        <p class="orders-empty__title">{{ t("orders.emptyTitle") }}</p>
+        <p class="orders-empty__description">
           {{ t("orders.emptyDescription") }}
         </p>
       </div>
 
-      <div v-else class="space-y-4">
+      <div v-else class="orders-list">
         <article
           v-for="order in orders"
           :key="order.id"
-          class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+          class="order-card"
         >
-          <div
-            class="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-start sm:justify-between"
-          >
-            <div class="min-w-0">
-              <p class="text-sm text-slate-500">{{ t("orders.orderNo") }}</p>
-              <h2 class="mt-1 break-all text-lg font-semibold text-slate-950">
+          <div class="order-card__header">
+            <div class="order-card__identity">
+              <p class="order-card__label">{{ t("orders.orderNo") }}</p>
+              <h2 class="order-card__number">
                 {{ order.orderNo }}
               </h2>
-              <p class="mt-2 text-sm text-slate-500">
+              <p class="order-card__created-time">
                 {{ t("orders.createdAt", { time: formatDateTime(order.createdAt) }) }}
               </p>
             </div>
             <span
-              class="inline-flex w-fit items-center rounded-full px-3 py-1 text-sm font-medium ring-1"
+              class="order-status"
               :class="getStatusMeta(order.status).className"
             >
               {{ getStatusLabel(order.status) }}
             </span>
           </div>
 
-          <dl class="grid gap-4 py-5 sm:grid-cols-2">
+          <dl class="order-details">
             <div>
-              <dt class="text-sm text-slate-500">{{ t("orders.escort") }}</dt>
-              <dd class="mt-1 text-base font-medium text-slate-900">
+              <dt class="order-details__label">{{ t("orders.escort") }}</dt>
+              <dd class="order-details__value">
                 {{ order.escort?.nickname || t("orders.waitingAccept") }}
               </dd>
             </div>
             <div>
-              <dt class="text-sm text-slate-500">{{ t("orders.amount") }}</dt>
-              <dd class="mt-1 text-base font-semibold text-slate-950">
+              <dt class="order-details__label">{{ t("orders.amount") }}</dt>
+              <dd class="order-details__amount">
                 {{ formatAmount(order.amount) }}
               </dd>
             </div>
             <div>
-              <dt class="text-sm text-slate-500">{{ t("orders.hospitalName") }}</dt>
-              <dd class="mt-1 text-base font-medium text-slate-900">
+              <dt class="order-details__label">{{ t("orders.hospitalName") }}</dt>
+              <dd class="order-details__value">
                 {{ order.hospitalName }}
               </dd>
             </div>
             <div>
-              <dt class="text-sm text-slate-500">{{ t("orders.serviceAt") }}</dt>
-              <dd class="mt-1 text-base font-medium text-slate-900">
+              <dt class="order-details__label">{{ t("orders.serviceAt") }}</dt>
+              <dd class="order-details__value">
                 {{ formatDateTime(order.serviceAt) }}
               </dd>
             </div>
-            <div class="sm:col-span-2">
-              <dt class="text-sm text-slate-500">{{ t("orders.remark") }}</dt>
-              <dd class="mt-1 whitespace-pre-wrap break-words text-base text-slate-900">
+            <div class="order-details__full-row">
+              <dt class="order-details__label">{{ t("orders.remark") }}</dt>
+              <dd class="order-details__remark">
                 {{ order.remark || t("orders.noRemark") }}
               </dd>
             </div>
@@ -431,7 +425,7 @@ async function handleReject(order: Order) {
 
           <div
             v-if="hasVisibleActions(order)"
-            class="flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-4"
+            class="order-card__actions"
           >
             <Button
               v-if="canUpdateRemark(order)"
@@ -454,7 +448,7 @@ async function handleReject(order: Order) {
             <Button
               v-if="canPay(order)"
               type="button"
-              class="bg-orange-600 hover:bg-orange-700"
+              class="order-action-button--pay"
               :disabled="isAnyActionLoading()"
               @click="handlePay(order)"
             >
@@ -463,7 +457,7 @@ async function handleReject(order: Order) {
             <Button
               v-if="canAccept(order)"
               type="button"
-              class="bg-sky-600 hover:bg-sky-700"
+              class="order-action-button--accept"
               :disabled="isAnyActionLoading()"
               @click="handleAccept(order)"
             >
@@ -481,7 +475,7 @@ async function handleReject(order: Order) {
             <Button
               v-if="canComplete(order)"
               type="button"
-              class="bg-green-600 hover:bg-green-700"
+              class="order-action-button--complete"
               :disabled="isAnyActionLoading()"
               @click="handleComplete(order)"
             >
@@ -498,23 +492,23 @@ async function handleReject(order: Order) {
 
     <div
       v-if="editingOrder"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-6"
+      class="order-editor-backdrop"
       role="dialog"
       aria-modal="true"
     >
-      <section class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-        <div class="flex items-start justify-between gap-4">
+      <section class="order-editor">
+        <div class="order-editor__header">
           <div>
-            <h2 class="text-lg font-semibold text-slate-950">
+            <h2 class="order-editor__title">
               {{ editTitle }}
             </h2>
-            <p class="mt-1 break-all text-sm text-slate-500">
+            <p class="order-editor__order-no">
               {{ editingOrder.orderNo }}
             </p>
           </div>
           <button
             type="button"
-            class="rounded-md px-2 py-1 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+            class="order-editor__close"
             :disabled="editSubmitting"
             @click="closeEditor"
           >
@@ -522,22 +516,22 @@ async function handleReject(order: Order) {
           </button>
         </div>
 
-        <div class="mt-5">
+        <div class="order-editor__body">
           <label
             v-if="editMode === 'remark'"
-            class="block text-sm font-medium text-slate-700"
+            class="order-editor__field"
           >
             {{ t("orders.remark") }}
             <textarea
               v-model="remarkInput"
-              class="mt-2 min-h-32 w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+              class="order-editor__textarea"
               :placeholder="t('orders.remarkPlaceholder')"
             ></textarea>
           </label>
 
           <label
             v-else
-            class="block text-sm font-medium text-slate-700"
+            class="order-editor__field"
           >
             {{ t("orders.amount") }}
             <input
@@ -545,13 +539,13 @@ async function handleReject(order: Order) {
               type="number"
               min="0"
               step="0.01"
-              class="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+              class="order-editor__input"
               :placeholder="t('orders.amountPlaceholder')"
             />
           </label>
         </div>
 
-        <div class="mt-6 flex justify-end gap-3">
+        <div class="order-editor__actions">
           <Button
             type="button"
             variant="outline"
@@ -562,7 +556,7 @@ async function handleReject(order: Order) {
           </Button>
           <Button
             type="button"
-            class="bg-teal-600 hover:bg-teal-700"
+            class="order-editor__save"
             :disabled="editSubmitting"
             @click="submitEditor"
           >
@@ -573,3 +567,179 @@ async function handleReject(order: Order) {
     </div>
   </main>
 </template>
+
+<style scoped>
+.orders-page {
+  @apply min-h-screen bg-slate-50 text-slate-900;
+}
+
+.orders-content {
+  @apply container mx-auto max-w-4xl px-4 py-8;
+}
+
+.orders-list {
+  @apply space-y-4;
+}
+
+.order-skeleton-card {
+  @apply animate-pulse rounded-lg border border-slate-200 bg-white p-6 shadow-sm;
+}
+
+.order-skeleton-card__title {
+  @apply h-5 w-48 rounded bg-slate-200;
+}
+
+.order-skeleton-card__line {
+  @apply mt-6 h-4 w-full rounded bg-slate-100;
+}
+
+.order-skeleton-card__short-line {
+  @apply mt-3 h-4 w-2/3 rounded bg-slate-100;
+}
+
+.orders-empty {
+  @apply rounded-lg border border-dashed border-slate-300 bg-white px-6 py-12 text-center;
+}
+
+.orders-empty__title {
+  @apply text-base font-medium text-slate-700;
+}
+
+.orders-empty__description {
+  @apply mt-2 text-sm text-slate-500;
+}
+
+.order-card {
+  @apply rounded-lg border border-slate-200 bg-white p-6 shadow-sm;
+}
+
+.order-card__header {
+  @apply flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-start sm:justify-between;
+}
+
+.order-card__identity {
+  @apply min-w-0;
+}
+
+.order-card__label,
+.order-card__created-time,
+.order-details__label {
+  @apply text-sm text-slate-500;
+}
+
+.order-card__number {
+  @apply mt-1 break-all text-lg font-semibold text-slate-950;
+}
+
+.order-card__created-time {
+  @apply mt-2;
+}
+
+.order-status {
+  @apply inline-flex w-fit items-center rounded-full px-3 py-1 text-sm font-medium ring-1;
+}
+
+.order-status--pending-payment {
+  @apply bg-orange-50 text-orange-700 ring-orange-200;
+}
+
+.order-status--pending-accept {
+  @apply bg-sky-50 text-sky-700 ring-sky-200;
+}
+
+.order-status--in-service {
+  @apply bg-blue-50 text-blue-700 ring-blue-200;
+}
+
+.order-status--completed {
+  @apply bg-green-50 text-green-700 ring-green-200;
+}
+
+.order-status--cancelled {
+  @apply bg-slate-100 text-slate-600 ring-slate-200;
+}
+
+.order-details {
+  @apply grid gap-4 py-5 sm:grid-cols-2;
+}
+
+.order-details__value {
+  @apply mt-1 text-base font-medium text-slate-900;
+}
+
+.order-details__amount {
+  @apply mt-1 text-base font-semibold text-slate-950;
+}
+
+.order-details__full-row {
+  @apply sm:col-span-2;
+}
+
+.order-details__remark {
+  @apply mt-1 whitespace-pre-wrap break-words text-base text-slate-900;
+}
+
+.order-card__actions {
+  @apply flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-4;
+}
+
+.order-action-button--pay {
+  @apply bg-orange-600 hover:bg-orange-700;
+}
+
+.order-action-button--accept {
+  @apply bg-sky-600 hover:bg-sky-700;
+}
+
+.order-action-button--complete {
+  @apply bg-green-600 hover:bg-green-700;
+}
+
+.order-editor-backdrop {
+  @apply fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-6;
+}
+
+.order-editor {
+  @apply w-full max-w-md rounded-lg bg-white p-6 shadow-xl;
+}
+
+.order-editor__header {
+  @apply flex items-start justify-between gap-4;
+}
+
+.order-editor__title {
+  @apply text-lg font-semibold text-slate-950;
+}
+
+.order-editor__order-no {
+  @apply mt-1 break-all text-sm text-slate-500;
+}
+
+.order-editor__close {
+  @apply rounded-md px-2 py-1 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-900;
+}
+
+.order-editor__body {
+  @apply mt-5;
+}
+
+.order-editor__field {
+  @apply block text-sm font-medium text-slate-700;
+}
+
+.order-editor__textarea {
+  @apply mt-2 min-h-32 w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100;
+}
+
+.order-editor__input {
+  @apply mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100;
+}
+
+.order-editor__actions {
+  @apply mt-6 flex justify-end gap-3;
+}
+
+.order-editor__save {
+  @apply bg-teal-600 hover:bg-teal-700;
+}
+</style>

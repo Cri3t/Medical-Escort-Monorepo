@@ -1,0 +1,31 @@
+.page-header {
+  @apply border-b border-slate-200 bg-white;
+}
+
+.page-header__inner {
+  @apply mx-auto flex items-center justify-between gap-4 px-4 py-5;
+}
+
+.page-header__inner--wide {
+  @apply max-w-6xl;
+}
+
+.page-header__inner--narrow {
+  @apply max-w-4xl;
+}
+
+.page-header__eyebrow {
+  @apply text-sm font-medium text-teal-700;
+}
+
+.page-header__title {
+  @apply text-2xl font-semibold tracking-normal text-slate-950;
+}
+
+.page-header__eyebrow + .page-header__title {
+  @apply mt-1;
+}
+
+.page-header__actions {
+  @apply flex shrink-0 items-center;
+}
