@@ -119,13 +119,49 @@ export class OrdersService {
     return this.toOrderListItem(updatedOrder);
   }
 
+  async cancelOrder(userId: string, orderId: string): Promise<OrderListItem> {
+    const order = await this.findOrderOrThrow(orderId);
+
+    if (order.customerId !== userId) {
+      throw new ForbiddenException('无权操作此订单');
+    }
+
+    if (
+      order.status !== OrderStatus.PENDING_PAYMENT &&
+      order.status !== OrderStatus.PENDING_ACCEPT
+    ) {
+      throw new BadRequestException('当前订单状态不允许取消');
+    }
+
+    const result = await this.prisma.order.updateMany({
+      where: {
+        id: orderId,
+        customerId: userId,
+        status: {
+          in: [OrderStatus.PENDING_PAYMENT, OrderStatus.PENDING_ACCEPT],
+        },
+      },
+      data: {
+        status: OrderStatus.CANCELLED,
+      },
+    });
+
+    if (result.count === 0) {
+      throw new BadRequestException('订单状态已变更，请刷新后重试');
+    }
+
+    const updatedOrder = await this.findOrderOrThrow(orderId);
+
+    return this.toOrderListItem(updatedOrder);
+  }
+
   async userUpdateOrder(
     userId: string,
     orderId: string,
     dto: UpdateOrderByUserDto,
   ): Promise<OrderListItem> {
-    const hasRemark = Object.prototype.hasOwnProperty.call(dto, 'remark');
-    const hasAmount = Object.prototype.hasOwnProperty.call(dto, 'amount');
+    const hasRemark = dto.remark !== undefined;
+    const hasAmount = dto.amount !== undefined;
 
     if (!hasRemark && !hasAmount) {
       throw new BadRequestException('请至少提交一个要修改的字段');

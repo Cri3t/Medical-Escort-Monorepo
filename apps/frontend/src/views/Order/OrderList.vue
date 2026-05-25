@@ -6,6 +6,7 @@ import UserNav from "@/components/UserNav.vue";
 import { Button } from "@/components/ui/button";
 import {
   acceptOrder,
+  cancelOrder,
   completeOrder,
   getMyOrders,
   payOrder,
@@ -26,7 +27,7 @@ interface StatusMeta {
   className: string;
 }
 
-type OrderAction = "pay" | "accept" | "complete" | "reject";
+type OrderAction = "pay" | "cancel" | "accept" | "complete" | "reject";
 type EditMode = "remark" | "amount";
 
 const statusMap: Record<OrderStatus, StatusMeta> = {
@@ -58,7 +59,7 @@ const actionLoadingKey = ref("");
 const editingOrder = ref<Order | null>(null);
 const editMode = ref<EditMode | null>(null);
 const remarkInput = ref("");
-const amountInput = ref("");
+const amountInput = ref<string | number>("");
 const editSubmitting = ref(false);
 const { locale, t } = useI18n();
 
@@ -168,6 +169,13 @@ function canPay(order: Order) {
   return user.value.role === "USER" && order.status === "PENDING_PAYMENT";
 }
 
+function canCancel(order: Order) {
+  return (
+    user.value.role === "USER" &&
+    (order.status === "PENDING_PAYMENT" || order.status === "PENDING_ACCEPT")
+  );
+}
+
 function canUpdateRemark(order: Order) {
   return (
     user.value.role === "USER" &&
@@ -202,6 +210,7 @@ function canComplete(order: Order) {
 function hasVisibleActions(order: Order) {
   return (
     canPay(order) ||
+    canCancel(order) ||
     canUpdateRemark(order) ||
     canUpdateAmount(order) ||
     canAccept(order) ||
@@ -240,13 +249,14 @@ function buildEditPayload(): UserUpdateOrderPayload | null {
     };
   }
 
-  const amount = Number(amountInput.value);
+  const rawAmount = String(amountInput.value).trim();
+  const amount = Number(rawAmount);
 
   if (
-    amountInput.value.trim() === "" ||
+    rawAmount === "" ||
     !Number.isFinite(amount) ||
     amount < 0 ||
-    !/^\d+(\.\d{1,2})?$/.test(amountInput.value.trim())
+    !/^\d+(\.\d{1,2})?$/.test(rawAmount)
   ) {
     alert(t("orders.invalidEditAmount"));
     return null;
@@ -314,6 +324,16 @@ async function runOrderAction(
 
 async function handlePay(order: Order) {
   await runOrderAction(order, "pay", payOrder, t("orders.paySuccess"));
+}
+
+async function handleCancel(order: Order) {
+  const confirmed = window.confirm(t("orders.cancelConfirm"));
+
+  if (!confirmed) {
+    return;
+  }
+
+  await runOrderAction(order, "cancel", cancelOrder, t("orders.cancelSuccess"));
 }
 
 async function handleAccept(order: Order) {
@@ -453,6 +473,19 @@ async function handleReject(order: Order) {
               @click="handlePay(order)"
             >
               {{ isActionLoading(order, "pay") ? t("orders.paying") : t("orders.pay") }}
+            </Button>
+            <Button
+              v-if="canCancel(order)"
+              type="button"
+              variant="destructive"
+              :disabled="isAnyActionLoading()"
+              @click="handleCancel(order)"
+            >
+              {{
+                isActionLoading(order, "cancel")
+                  ? t("orders.cancelling")
+                  : t("orders.cancel")
+              }}
             </Button>
             <Button
               v-if="canAccept(order)"

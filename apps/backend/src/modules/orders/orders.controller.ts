@@ -84,6 +84,36 @@ export class OrdersController {
     return this.ordersService.payOrder(user.id, orderId);
   }
 
+  @ApiOperation({ summary: 'Cancel an order as the current patient' })
+  @ApiParam({
+    name: 'id',
+    description: 'Order ID',
+    example: 'clx0000000000000000000000',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Order status changed to CANCELLED.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Order cannot be cancelled in its current status or status changed.',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized or login expired.' })
+  @ApiResponse({
+    status: 403,
+    description: 'The current user cannot operate this order or role is not allowed.',
+  })
+  @ApiResponse({ status: 404, description: 'Order not found.' })
+  @Post(':id/cancel')
+  @Roles(UserRole.USER)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  cancelOrder(
+    @CurrentUser() user: SafeUser,
+    @Param('id') orderId: string,
+  ): Promise<OrderListItem> {
+    return this.ordersService.cancelOrder(user.id, orderId);
+  }
+
   @ApiOperation({
     summary: 'Update order remark or amount as the current patient',
   })

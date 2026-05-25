@@ -137,6 +137,8 @@ const en = {
     updateAmount: "Update Amount",
     pay: "Pay Now",
     paying: "Paying...",
+    cancel: "Cancel Order",
+    cancelling: "Cancelling...",
     accept: "Accept",
     accepting: "Accepting...",
     reject: "Reject Order",
@@ -151,6 +153,8 @@ const en = {
       "Please enter a non-negative amount with up to two decimal places",
     updateSuccess: "Order updated",
     paySuccess: "Payment successful",
+    cancelConfirm: "Cancel this order?",
+    cancelSuccess: "Order cancelled",
     acceptSuccess: "Order accepted",
     completeSuccess: "Service completed",
     rejectConfirm:

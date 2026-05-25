@@ -53,6 +53,10 @@ export function payOrder(id: string) {
   return request.post<unknown, Order>(`/orders/${id}/pay`);
 }
 
+export function cancelOrder(id: string) {
+  return request.post<unknown, Order>(`/orders/${id}/cancel`);
+}
+
 export function userUpdateOrder(id: string, data: UserUpdateOrderPayload) {
   return request.patch<unknown, Order>(`/orders/${id}/user-update`, data);
 }
