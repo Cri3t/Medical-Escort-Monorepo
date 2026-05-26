@@ -21,6 +21,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { SafeUser } from '../user/types/safe-user.type';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { ReassignOrderDto } from './dto/reassign-order.dto';
 import { UpdateOrderByUserDto } from './dto/update-order-by-user.dto';
 import { OrdersService } from './orders.service';
 import type { OrderListItem } from './types/order-list-item.type';
@@ -112,6 +113,37 @@ export class OrdersController {
     @Param('id') orderId: string,
   ): Promise<OrderListItem> {
     return this.ordersService.cancelOrder(user.id, orderId);
+  }
+
+  @ApiOperation({ summary: 'Reassign a rejected order as the current patient' })
+  @ApiParam({
+    name: 'id',
+    description: 'Order ID',
+    example: 'clx0000000000000000000000',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'The order has been reassigned to a new escort.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Order cannot be reassigned or target escort is unavailable.',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized or login expired.' })
+  @ApiResponse({
+    status: 403,
+    description: 'The current user cannot operate this order.',
+  })
+  @ApiResponse({ status: 404, description: 'Order not found.' })
+  @Post(':id/reassign')
+  @Roles(UserRole.USER)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  reassignOrder(
+    @CurrentUser() user: SafeUser,
+    @Param('id') orderId: string,
+    @Body() dto: ReassignOrderDto,
+  ): Promise<OrderListItem> {
+    return this.ordersService.reassignOrder(user.id, orderId, dto);
   }
 
   @ApiOperation({

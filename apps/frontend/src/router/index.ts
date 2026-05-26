@@ -49,6 +49,15 @@ const router = createRouter({
         requiresAdmin: true,
       },
     },
+    {
+      path: "/admin/orders",
+      name: "AdminOrderList",
+      component: () => import("../views/Admin/OrderList.vue"),
+      meta: {
+        requiresAuth: true,
+        requiresAdmin: true,
+      },
+    },
   ],
 });
 

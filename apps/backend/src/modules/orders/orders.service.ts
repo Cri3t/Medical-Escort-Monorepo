@@ -8,36 +8,20 @@ import { EscortProfileStatus, OrderStatus, UserRole } from '@medical-escort/data
 import { PrismaService } from '../../prisma/prisma.service';
 import { SafeUser } from '../user/types/safe-user.type';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { ReassignOrderDto } from './dto/reassign-order.dto';
 import { UpdateOrderByUserDto } from './dto/update-order-by-user.dto';
+import { OrdersGateway } from './orders.gateway';
 import type { OrderListItem, OrderParticipant } from './types/order-list-item.type';
 
 @Injectable()
 export class OrdersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ordersGateway: OrdersGateway,
+  ) {}
 
   async create(customerId: string, dto: CreateOrderDto): Promise<OrderListItem> {
-    const escort = await this.prisma.user.findUnique({
-      where: { id: dto.escortId },
-      select: {
-        id: true,
-        role: true,
-        escortProfile: {
-          select: {
-            status: true,
-            isVerified: true,
-          },
-        },
-      },
-    });
-
-    if (
-      !escort ||
-      escort.role !== UserRole.ESCORT ||
-      escort.escortProfile?.status !== EscortProfileStatus.APPROVED ||
-      !escort.escortProfile.isVerified
-    ) {
-      throw new BadRequestException('Escort does not exist or is not available');
-    }
+    await this.assertEscortAvailable(dto.escortId);
 
     const orderNo = await this.generateOrderNo();
 
@@ -115,6 +99,13 @@ export class OrdersService {
         status: OrderStatus.PENDING_ACCEPT,
       },
     });
+
+    if (updatedOrder.escortId) {
+      this.ordersGateway.notifyAssignmentPending(updatedOrder.escortId, {
+        orderId: updatedOrder.id,
+        orderNo: updatedOrder.orderNo,
+      });
+    }
 
     return this.toOrderListItem(updatedOrder);
   }
@@ -223,6 +214,49 @@ export class OrdersService {
     return this.toOrderListItem(updatedOrder);
   }
 
+  async reassignOrder(
+    userId: string,
+    orderId: string,
+    dto: ReassignOrderDto,
+  ): Promise<OrderListItem> {
+    const order = await this.findOrderOrThrow(orderId);
+
+    if (order.customerId !== userId) {
+      throw new ForbiddenException('无权操作此订单');
+    }
+
+    if (order.status !== OrderStatus.PENDING_ACCEPT || order.escortId !== null) {
+      throw new BadRequestException('当前订单无法重新选择陪诊员');
+    }
+
+    await this.assertEscortAvailable(dto.escortId);
+
+    const result = await this.prisma.order.updateMany({
+      where: {
+        id: orderId,
+        customerId: userId,
+        status: OrderStatus.PENDING_ACCEPT,
+        escortId: null,
+      },
+      data: {
+        escortId: dto.escortId,
+      },
+    });
+
+    if (result.count === 0) {
+      throw new BadRequestException('订单状态已变更，请刷新后重试');
+    }
+
+    const updatedOrder = await this.findOrderOrThrow(orderId);
+
+    this.ordersGateway.notifyAssignmentPending(dto.escortId, {
+      orderId: updatedOrder.id,
+      orderNo: updatedOrder.orderNo,
+    });
+
+    return this.toOrderListItem(updatedOrder);
+  }
+
   async acceptOrder(escortId: string, orderId: string): Promise<OrderListItem> {
     const order = await this.findOrderOrThrow(orderId);
 
@@ -294,6 +328,11 @@ export class OrdersService {
 
     const updatedOrder = await this.findOrderOrThrow(orderId);
 
+    this.ordersGateway.notifyAssignmentRejected(updatedOrder.customerId, {
+      orderId: updatedOrder.id,
+      orderNo: updatedOrder.orderNo,
+    });
+
     return this.toOrderListItem(updatedOrder);
   }
 
@@ -338,6 +377,30 @@ export class OrdersService {
     }
 
     return order;
+  }
+
+  private async assertEscortAvailable(escortId: string): Promise<void> {
+    const escort = await this.prisma.user.findUnique({
+      where: { id: escortId },
+      select: {
+        role: true,
+        escortProfile: {
+          select: {
+            status: true,
+            isVerified: true,
+          },
+        },
+      },
+    });
+
+    if (
+      !escort ||
+      escort.role !== UserRole.ESCORT ||
+      escort.escortProfile?.status !== EscortProfileStatus.APPROVED ||
+      !escort.escortProfile.isVerified
+    ) {
+      throw new BadRequestException('Escort does not exist or is not available');
+    }
   }
 
   private createOrderNo(): string {

@@ -13,6 +13,10 @@ export interface UserUpdateOrderPayload {
   amount?: number;
 }
 
+export interface ReassignOrderPayload {
+  escortId: string;
+}
+
 export type OrderStatus =
   | "PENDING_PAYMENT"
   | "PENDING_ACCEPT"
@@ -59,6 +63,10 @@ export function cancelOrder(id: string) {
 
 export function userUpdateOrder(id: string, data: UserUpdateOrderPayload) {
   return request.patch<unknown, Order>(`/orders/${id}/user-update`, data);
+}
+
+export function reassignOrder(id: string, data: ReassignOrderPayload) {
+  return request.post<unknown, Order>(`/orders/${id}/reassign`, data);
 }
 
 export function acceptOrder(id: string) {

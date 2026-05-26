@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { getPublicProfiles } from "@/api/escort";
+import type { PublicEscortProfile } from "@/api/escort";
 import PageHeader from "@/components/PageHeader/PageHeader.vue";
 import UserNav from "@/components/UserNav.vue";
 import { Button } from "@/components/ui/button";
@@ -10,10 +12,12 @@ import {
   completeOrder,
   getMyOrders,
   payOrder,
+  reassignOrder,
   rejectOrder,
   userUpdateOrder,
 } from "@/api/order";
 import type { Order, OrderStatus, UserUpdateOrderPayload } from "@/api/order";
+import { ORDER_LIST_REFRESH_EVENT } from "@/realtime/orders";
 
 interface StoredUser {
   id?: string;
@@ -61,6 +65,11 @@ const editMode = ref<EditMode | null>(null);
 const remarkInput = ref("");
 const amountInput = ref<string | number>("");
 const editSubmitting = ref(false);
+const reassigningOrder = ref<Order | null>(null);
+const availableEscorts = ref<PublicEscortProfile[]>([]);
+const selectedEscortId = ref("");
+const reassignLoading = ref(false);
+const reassignSubmitting = ref(false);
 const { locale, t } = useI18n();
 
 const intlLocale = computed(() => (locale.value === "zh-CN" ? "zh-CN" : "en-US"));
@@ -102,8 +111,17 @@ const editTitle = computed(() => {
 });
 
 onMounted(() => {
+  window.addEventListener(ORDER_LIST_REFRESH_EVENT, handleRealtimeRefresh);
   void fetchOrders();
 });
+
+onBeforeUnmount(() => {
+  window.removeEventListener(ORDER_LIST_REFRESH_EVENT, handleRealtimeRefresh);
+});
+
+function handleRealtimeRefresh() {
+  void fetchOrders();
+}
 
 async function fetchOrders() {
   loading.value = true;
@@ -162,7 +180,7 @@ function isActionLoading(order: Order, action: OrderAction) {
 }
 
 function isAnyActionLoading() {
-  return actionLoadingKey.value !== "" || editSubmitting.value;
+  return actionLoadingKey.value !== "" || editSubmitting.value || reassignSubmitting.value;
 }
 
 function canPay(order: Order) {
@@ -185,6 +203,14 @@ function canUpdateRemark(order: Order) {
 
 function canUpdateAmount(order: Order) {
   return user.value.role === "USER" && order.status === "PENDING_ACCEPT";
+}
+
+function canReassign(order: Order) {
+  return (
+    user.value.role === "USER" &&
+    order.status === "PENDING_ACCEPT" &&
+    order.escortId === null
+  );
 }
 
 function canAccept(order: Order) {
@@ -297,6 +323,67 @@ function closeEditorAfterSubmit() {
   editMode.value = null;
   remarkInput.value = "";
   amountInput.value = "";
+}
+
+async function openReassignDialog(order: Order) {
+  if (isAnyActionLoading()) {
+    return;
+  }
+
+  reassigningOrder.value = order;
+  selectedEscortId.value = "";
+  reassignLoading.value = true;
+
+  try {
+    availableEscorts.value = await getPublicProfiles();
+  } catch {
+    // The request interceptor already displays backend error messages.
+    closeReassignDialogAfterSubmit();
+  } finally {
+    reassignLoading.value = false;
+  }
+}
+
+function closeReassignDialog() {
+  if (reassignLoading.value || reassignSubmitting.value) {
+    return;
+  }
+
+  reassigningOrder.value = null;
+  availableEscorts.value = [];
+  selectedEscortId.value = "";
+}
+
+function closeReassignDialogAfterSubmit() {
+  reassigningOrder.value = null;
+  availableEscorts.value = [];
+  selectedEscortId.value = "";
+}
+
+async function submitReassignment() {
+  if (!reassigningOrder.value || reassignSubmitting.value) {
+    return;
+  }
+
+  if (!selectedEscortId.value) {
+    alert(t("orders.reassignSelectRequired"));
+    return;
+  }
+
+  reassignSubmitting.value = true;
+
+  try {
+    await reassignOrder(reassigningOrder.value.id, {
+      escortId: selectedEscortId.value,
+    });
+    alert(t("orders.reassignSuccess"));
+    closeReassignDialogAfterSubmit();
+    await fetchOrders();
+  } catch {
+    // The request interceptor already displays backend error messages.
+  } finally {
+    reassignSubmitting.value = false;
+  }
 }
 
 async function runOrderAction(
@@ -466,6 +553,15 @@ async function handleReject(order: Order) {
               {{ t("orders.updateAmount") }}
             </Button>
             <Button
+              v-if="canReassign(order)"
+              type="button"
+              class="order-action-button--reassign"
+              :disabled="isAnyActionLoading()"
+              @click="openReassignDialog(order)"
+            >
+              {{ t("orders.reassign") }}
+            </Button>
+            <Button
               v-if="canPay(order)"
               type="button"
               class="order-action-button--pay"
@@ -594,6 +690,70 @@ async function handleReject(order: Order) {
             @click="submitEditor"
           >
             {{ editSubmitting ? t("common.submitting") : t("common.save") }}
+          </Button>
+        </div>
+      </section>
+    </div>
+
+    <div
+      v-if="reassigningOrder"
+      class="order-editor-backdrop"
+      role="dialog"
+      aria-modal="true"
+    >
+      <section class="order-editor">
+        <div class="order-editor__header">
+          <div>
+            <h2 class="order-editor__title">{{ t("orders.reassignTitle") }}</h2>
+            <p class="order-editor__order-no">{{ reassigningOrder.orderNo }}</p>
+          </div>
+          <button
+            type="button"
+            class="order-editor__close"
+            :disabled="reassignLoading || reassignSubmitting"
+            @click="closeReassignDialog"
+          >
+            {{ t("common.close") }}
+          </button>
+        </div>
+
+        <p class="order-editor__description">{{ t("orders.reassignDescription") }}</p>
+        <div v-if="reassignLoading" class="order-editor__empty">
+          {{ t("orders.loadingEscorts") }}
+        </div>
+        <div v-else-if="availableEscorts.length === 0" class="order-editor__empty">
+          {{ t("orders.noAvailableEscorts") }}
+        </div>
+        <label v-else class="order-editor__field order-editor__field--spaced">
+          {{ t("orders.selectEscort") }}
+          <select v-model="selectedEscortId" class="order-editor__select">
+            <option disabled value="">{{ t("orders.selectEscortPlaceholder") }}</option>
+            <option
+              v-for="escort in availableEscorts"
+              :key="escort.userId"
+              :value="escort.userId"
+            >
+              {{ escort.user.nickname || t("book.unnamedEscort") }}
+            </option>
+          </select>
+        </label>
+
+        <div class="order-editor__actions">
+          <Button
+            type="button"
+            variant="outline"
+            :disabled="reassignLoading || reassignSubmitting"
+            @click="closeReassignDialog"
+          >
+            {{ t("common.cancel") }}
+          </Button>
+          <Button
+            type="button"
+            class="order-editor__save"
+            :disabled="reassignLoading || reassignSubmitting || availableEscorts.length === 0"
+            @click="submitReassignment"
+          >
+            {{ reassignSubmitting ? t("orders.reassigning") : t("orders.confirmReassign") }}
           </Button>
         </div>
       </section>
@@ -728,6 +888,10 @@ async function handleReject(order: Order) {
   @apply bg-green-600 hover:bg-green-700;
 }
 
+.order-action-button--reassign {
+  @apply bg-teal-600 hover:bg-teal-700;
+}
+
 .order-editor-backdrop {
   @apply fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-6;
 }
@@ -756,8 +920,20 @@ async function handleReject(order: Order) {
   @apply mt-5;
 }
 
+.order-editor__description {
+  @apply mt-4 text-sm text-slate-600;
+}
+
+.order-editor__empty {
+  @apply mt-5 rounded-md bg-slate-50 px-4 py-5 text-center text-sm text-slate-500;
+}
+
 .order-editor__field {
   @apply block text-sm font-medium text-slate-700;
+}
+
+.order-editor__field--spaced {
+  @apply mt-5;
 }
 
 .order-editor__textarea {
@@ -766,6 +942,10 @@ async function handleReject(order: Order) {
 
 .order-editor__input {
   @apply mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100;
+}
+
+.order-editor__select {
+  @apply mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100;
 }
 
 .order-editor__actions {
