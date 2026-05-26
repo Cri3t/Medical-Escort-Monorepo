@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { ClipboardCheck, Languages, LogOut, UserRound } from "lucide-vue-next";
+import { ClipboardCheck, ClipboardList, Languages, LogOut, UserRound } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 import { Button } from "@/components/ui/button";
 import { setLocale, type SupportedLocale } from "@/i18n";
@@ -53,6 +53,10 @@ function goEscortReviews() {
   router.push("/admin/escort-reviews");
 }
 
+function goAdminOrders() {
+  router.push("/admin/orders");
+}
+
 function handleLogout() {
   localStorage.removeItem("user");
   localStorage.removeItem("token");
@@ -90,6 +94,10 @@ function toggleLocale() {
       <DropdownMenuItem v-if="isAdmin" @select="goEscortReviews">
         <ClipboardCheck class="h-4 w-4" aria-hidden="true" />
         <span>{{ t("userNav.escortReviews") }}</span>
+      </DropdownMenuItem>
+      <DropdownMenuItem v-if="isAdmin" @select="goAdminOrders">
+        <ClipboardList class="h-4 w-4" aria-hidden="true" />
+        <span>{{ t("userNav.orderManagement") }}</span>
       </DropdownMenuItem>
       <DropdownMenuSeparator v-if="isAdmin" />
       <DropdownMenuItem @select="toggleLocale">

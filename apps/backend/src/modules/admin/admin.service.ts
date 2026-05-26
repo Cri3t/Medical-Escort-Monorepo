@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { EscortProfileStatus, UserRole } from '@medical-escort/database';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AdminOrdersQueryDto } from './dto/admin-orders-query.dto';
 import { PendingEscortProfilesQueryDto } from './dto/pending-escort-profiles-query.dto';
 import {
   ReviewEscortProfileAction,
@@ -10,6 +11,62 @@ import {
 @Injectable()
 export class AdminService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async getOrders(query: AdminOrdersQueryDto) {
+    const page = query.page ?? 1;
+    const pageSize = query.pageSize ?? 10;
+    const skip = (page - 1) * pageSize;
+    const where = query.status ? { status: query.status } : undefined;
+
+    const [orders, total] = await this.prisma.$transaction([
+      this.prisma.order.findMany({
+        where,
+        select: {
+          id: true,
+          orderNo: true,
+          customerId: true,
+          escortId: true,
+          hospitalName: true,
+          serviceAt: true,
+          remark: true,
+          amount: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          customer: {
+            select: {
+              id: true,
+              nickname: true,
+              phone: true,
+            },
+          },
+          escort: {
+            select: {
+              id: true,
+              nickname: true,
+              phone: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take: pageSize,
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+
+    return {
+      list: orders.map((order) => ({
+        ...order,
+        amount: order.amount.toNumber(),
+      })),
+      total,
+      page,
+      pageSize,
+    };
+  }
 
   async getPendingEscortProfiles(query: PendingEscortProfilesQueryDto) {
     const page = query.page ?? 1;

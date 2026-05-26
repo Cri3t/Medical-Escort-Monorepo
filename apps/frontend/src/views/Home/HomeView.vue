@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { ClipboardCheck } from "lucide-vue-next";
+import { ClipboardCheck, ClipboardList } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 import PageHeader from "@/components/PageHeader/PageHeader.vue";
 import UserNav from "@/components/UserNav.vue";
@@ -183,6 +183,10 @@ function goMyOrders() {
 function goEscortReviews() {
   router.push("/admin/escort-reviews");
 }
+
+function goAdminOrders() {
+  router.push("/admin/orders");
+}
 </script>
 
 <template>
@@ -288,6 +292,28 @@ function goEscortReviews() {
             {{ t("home.adminReviewButton") }}
           </button>
         </article>
+
+        <article
+          v-if="isAdmin"
+          class="home-feature-card"
+        >
+          <div class="home-feature-card__icon home-feature-card__icon--admin-orders">
+            <ClipboardList class="home-feature-card__svg" aria-hidden="true" />
+          </div>
+          <h3 class="home-feature-card__title">
+            {{ t("home.adminOrdersTitle") }}
+          </h3>
+          <p class="home-feature-card__description">
+            {{ t("home.adminOrdersDescription") }}
+          </p>
+          <button
+            type="button"
+            class="home-action home-action--admin-orders"
+            @click="goAdminOrders"
+          >
+            {{ t("home.adminOrdersButton") }}
+          </button>
+        </article>
       </div>
     </section>
   </main>
@@ -342,6 +368,10 @@ function goEscortReviews() {
   @apply bg-indigo-50 text-indigo-700;
 }
 
+.home-feature-card__icon--admin-orders {
+  @apply bg-violet-50 text-violet-700;
+}
+
 .home-feature-card__svg {
   @apply h-6 w-6;
 }
@@ -369,6 +399,10 @@ function goEscortReviews() {
 
 .home-action--admin {
   @apply bg-indigo-600 text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 focus:ring-indigo-200;
+}
+
+.home-action--admin-orders {
+  @apply bg-violet-600 text-white shadow-lg shadow-violet-600/20 hover:bg-violet-700 focus:ring-violet-200;
 }
 
 .home-action--disabled {

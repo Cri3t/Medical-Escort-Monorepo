@@ -1,4 +1,5 @@
 import request from "@/utils/request";
+import type { OrderStatus } from "@/api/order";
 
 export type EscortProfileStatus = "PENDING" | "APPROVED" | "REJECTED";
 export type ReviewAction = "APPROVE" | "REJECT";
@@ -27,6 +28,45 @@ export interface PendingEscortProfilePage {
 export interface ReviewEscortProfilePayload {
   action: ReviewAction;
   reason?: string;
+}
+
+export interface AdminOrderParticipant {
+  id: string;
+  nickname: string | null;
+  phone: string;
+}
+
+export interface AdminOrder {
+  id: string;
+  orderNo: string;
+  customerId: string;
+  escortId: string | null;
+  hospitalName: string;
+  serviceAt: string;
+  remark: string | null;
+  amount: number;
+  status: OrderStatus;
+  createdAt: string;
+  updatedAt: string;
+  customer: AdminOrderParticipant;
+  escort: AdminOrderParticipant | null;
+}
+
+export interface AdminOrderPage {
+  list: AdminOrder[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface AdminOrdersQuery {
+  page: number;
+  pageSize: number;
+  status?: OrderStatus;
+}
+
+export function getAdminOrders(params: AdminOrdersQuery) {
+  return request.get<unknown, AdminOrderPage>("/admin/orders", { params });
 }
 
 export function getPendingEscortProfiles(params: {
