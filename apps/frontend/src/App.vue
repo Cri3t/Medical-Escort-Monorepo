@@ -3,7 +3,7 @@ import { onBeforeUnmount, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { io, type Socket } from "socket.io-client";
-import { ORDER_LIST_REFRESH_EVENT, type OrderRealtimePayload } from "@/realtime/orders";
+import { ORDER_LIST_REFRESH_EVENT, type OrderRealtimePayload } from "@/types/order";
 
 type NotificationType = "pending" | "rejected";
 

@@ -1,4 +1,4 @@
-export interface OrderForm {
+export interface BookingFormState {
   hospitalName: string;
   serviceAt: string;
   amount: number;

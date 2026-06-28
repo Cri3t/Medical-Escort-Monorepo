@@ -2,11 +2,11 @@ import { computed, ref } from "vue";
 import type { Router } from "vue-router";
 import type { PublicEscortProfile } from "@/api/escort";
 import { createOrder } from "@/api/order";
-import type { OrderForm } from "../types";
+import type { BookingFormState } from "../types";
 
 type Translate = (key: string) => string;
 
-function initialForm(): OrderForm {
+function initialForm(): BookingFormState {
   return {
     hospitalName: "",
     serviceAt: "",
@@ -18,7 +18,7 @@ function initialForm(): OrderForm {
 export function useBookingForm(router: Router, t: Translate) {
   const submitLoading = ref(false);
   const selectedEscort = ref<PublicEscortProfile | null>(null);
-  const form = ref<OrderForm>(initialForm());
+  const form = ref<BookingFormState>(initialForm());
 
   const isDialogOpen = computed(() => selectedEscort.value !== null);
 

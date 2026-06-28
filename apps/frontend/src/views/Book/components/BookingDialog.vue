@@ -3,7 +3,7 @@ import { MapPin } from "lucide-vue-next";
 import { useI18n } from "vue-i18n";
 import type { PublicEscortProfile } from "@/api/escort";
 import { Button } from "@/components/ui/button";
-import type { OrderForm } from "../types";
+import type { BookingFormState } from "../types";
 
 interface Props {
   selectedEscort: PublicEscortProfile;
@@ -12,7 +12,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const form = defineModel<OrderForm>("form", {
+const form = defineModel<BookingFormState>("form", {
   required: true,
 });
 
@@ -115,7 +115,11 @@ function getEscortName(escort: PublicEscortProfile) {
             class="book-submit-button"
             :disabled="props.submitLoading"
           >
-            {{ props.submitLoading ? t("common.submitting") : t("book.confirmBooking") }}
+            {{
+              props.submitLoading
+                ? t("common.submitting")
+                : t("book.confirmBooking")
+            }}
           </Button>
         </div>
       </form>

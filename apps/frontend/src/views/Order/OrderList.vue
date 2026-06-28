@@ -17,7 +17,7 @@ import {
   userUpdateOrder,
 } from "@/api/order";
 import type { Order, OrderStatus, UserUpdateOrderPayload } from "@/api/order";
-import { ORDER_LIST_REFRESH_EVENT } from "@/realtime/orders";
+import { ORDER_LIST_REFRESH_EVENT } from "@/types/order";
 
 interface StoredUser {
   id?: string;
