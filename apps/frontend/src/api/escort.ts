@@ -3,6 +3,7 @@ import request from "@/utils/request";
 export interface PublicEscortProfile {
   id: string;
   userId: string;
+  tags: string[];
   isVerified: boolean;
   status: "APPROVED";
   createdAt: string;

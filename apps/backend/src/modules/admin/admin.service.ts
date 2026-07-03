@@ -1,12 +1,38 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { EscortProfileStatus, UserRole } from '@medical-escort/database';
-import { PrismaService } from '../../prisma/prisma.service';
-import { AdminOrdersQueryDto } from './dto/admin-orders-query.dto';
-import { PendingEscortProfilesQueryDto } from './dto/pending-escort-profiles-query.dto';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
+import { EscortProfileStatus, UserRole } from "@medical-escort/database";
+import { PrismaService } from "../../prisma/prisma.service";
+import { normalizeEscortTags } from "../escort-profile/escort-tags";
+import type {
+  AdminEscortProfileResponse,
+  PendingEscortProfilesResponse,
+} from "./types/admin-response.types";
+import { AdminOrdersQueryDto } from "./dto/admin-orders-query.dto";
+import { PendingEscortProfilesQueryDto } from "./dto/pending-escort-profiles-query.dto";
 import {
   ReviewEscortProfileAction,
   ReviewEscortProfileDto,
-} from './dto/review-escort-profile.dto';
+} from "./dto/review-escort-profile.dto";
+
+const adminEscortProfileSelect = {
+  id: true,
+  userId: true,
+  idCardNo: true,
+  tags: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+  user: {
+    select: {
+      id: true,
+      nickname: true,
+      phone: true,
+    },
+  },
+} as const;
 
 @Injectable()
 export class AdminService {
@@ -49,7 +75,7 @@ export class AdminService {
           },
         },
         orderBy: {
-          createdAt: 'desc',
+          createdAt: "desc",
         },
         skip,
         take: pageSize,
@@ -68,7 +94,9 @@ export class AdminService {
     };
   }
 
-  async getPendingEscortProfiles(query: PendingEscortProfilesQueryDto) {
+  async getPendingEscortProfiles(
+    query: PendingEscortProfilesQueryDto,
+  ): Promise<PendingEscortProfilesResponse> {
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 10;
     const skip = (page - 1) * pageSize;
@@ -78,23 +106,9 @@ export class AdminService {
         where: {
           status: EscortProfileStatus.PENDING,
         },
-        select: {
-          id: true,
-          userId: true,
-          idCardNo: true,
-          status: true,
-          createdAt: true,
-          updatedAt: true,
-          user: {
-            select: {
-              id: true,
-              nickname: true,
-              phone: true,
-            },
-          },
-        },
+        select: adminEscortProfileSelect,
         orderBy: {
-          createdAt: 'asc',
+          createdAt: "asc",
         },
         skip,
         take: pageSize,
@@ -107,14 +121,17 @@ export class AdminService {
     ]);
 
     return {
-      list,
+      list: list.map(toAdminEscortProfileResponse),
       total,
       page,
       pageSize,
     };
   }
 
-  async reviewEscortProfile(profileId: string, dto: ReviewEscortProfileDto) {
+  async reviewEscortProfile(
+    profileId: string,
+    dto: ReviewEscortProfileDto,
+  ): Promise<AdminEscortProfileResponse> {
     const profile = await this.prisma.escortProfile.findUnique({
       where: {
         id: profileId,
@@ -127,14 +144,20 @@ export class AdminService {
     });
 
     if (!profile) {
-      throw new NotFoundException('陪诊员申请不存在');
+      throw new NotFoundException("陪诊员申请不存在");
     }
 
     if (profile.status !== EscortProfileStatus.PENDING) {
-      throw new BadRequestException('只能审核待审核的陪诊员申请');
+      throw new BadRequestException("只能审核待审核的陪诊员申请");
     }
 
     if (dto.action === ReviewEscortProfileAction.APPROVE) {
+      const tags = normalizeEscortTags(dto.tags);
+
+      if (tags.length === 0) {
+        throw new BadRequestException("请至少填写一个擅长服务标签");
+      }
+
       return this.prisma.$transaction(async (tx) => {
         const result = await tx.escortProfile.updateMany({
           where: {
@@ -144,12 +167,13 @@ export class AdminService {
           data: {
             status: EscortProfileStatus.APPROVED,
             isVerified: true,
+            tags,
             rejectionReason: null,
           },
         });
 
         if (result.count === 0) {
-          throw new BadRequestException('只能审核待审核的陪诊员申请');
+          throw new BadRequestException("只能审核待审核的陪诊员申请");
         }
 
         await tx.user.update({
@@ -161,11 +185,14 @@ export class AdminService {
           },
         });
 
-        return tx.escortProfile.findUniqueOrThrow({
+        const updatedProfile = await tx.escortProfile.findUniqueOrThrow({
           where: {
             id: profileId,
           },
+          select: adminEscortProfileSelect,
         });
+
+        return toAdminEscortProfileResponse(updatedProfile);
       });
     }
 
@@ -184,13 +211,36 @@ export class AdminService {
     });
 
     if (result.count === 0) {
-      throw new BadRequestException('只能审核待审核的陪诊员申请');
+      throw new BadRequestException("只能审核待审核的陪诊员申请");
     }
 
-    return this.prisma.escortProfile.findUniqueOrThrow({
+    const rejectedProfile = await this.prisma.escortProfile.findUniqueOrThrow({
       where: {
         id: profileId,
       },
+      select: adminEscortProfileSelect,
     });
+
+    return toAdminEscortProfileResponse(rejectedProfile);
   }
+}
+
+function toAdminEscortProfileResponse(profile: {
+  id: string;
+  userId: string;
+  idCardNo: string;
+  tags: unknown;
+  status: EscortProfileStatus;
+  createdAt: Date;
+  updatedAt: Date;
+  user: {
+    id: string;
+    nickname: string | null;
+    phone: string;
+  };
+}): AdminEscortProfileResponse {
+  return {
+    ...profile,
+    tags: normalizeEscortTags(profile.tags),
+  };
 }

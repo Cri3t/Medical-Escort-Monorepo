@@ -27,7 +27,11 @@ const rejectDialogOpen = ref(false);
 const rejectTarget = ref<PendingEscortProfile | null>(null);
 const rejectionReason = ref("");
 const rejectionError = ref("");
+const tagDrafts = ref<Record<string, string>>({});
+const tagErrors = ref<Record<string, string>>({});
 const { locale, t } = useI18n();
+const maxTags = 10;
+const maxTagLength = 20;
 
 const intlLocale = computed(() => (locale.value === "zh-CN" ? "zh-CN" : "en-US"));
 
@@ -74,6 +78,10 @@ async function loadPendingProfiles() {
       pageSize,
     });
     list.value = data.list;
+    tagDrafts.value = Object.fromEntries(
+      data.list.map((profile) => [profile.id, profile.tags.join(", ")]),
+    );
+    tagErrors.value = {};
     total.value = data.total;
     page.value = data.page;
   } finally {
@@ -95,13 +103,48 @@ function formatDate(value: string) {
   });
 }
 
+function parseTags(value: string) {
+  return value
+    .split(/[,，]/)
+    .map((tag) => tag.trim())
+    .filter((tag, index, array) => Boolean(tag) && array.indexOf(tag) === index);
+}
+
+function validateTags(profileId: string) {
+  const tags = parseTags(tagDrafts.value[profileId] ?? "");
+
+  if (tags.length === 0) {
+    tagErrors.value[profileId] = t("admin.tagsRequired");
+    return null;
+  }
+
+  if (tags.length > maxTags) {
+    tagErrors.value[profileId] = t("admin.tooManyTags", { max: maxTags });
+    return null;
+  }
+
+  if (tags.some((tag) => tag.length > maxTagLength)) {
+    tagErrors.value[profileId] = t("admin.tagTooLong", { max: maxTagLength });
+    return null;
+  }
+
+  tagErrors.value[profileId] = "";
+  return tags;
+}
+
 async function approveProfile(profile: PendingEscortProfile) {
+  const tags = validateTags(profile.id);
+
+  if (!tags) {
+    return;
+  }
+
   actionLoadingId.value = profile.id;
 
   try {
     await reviewEscortProfile(profile.id, {
       action: "APPROVE",
-      reason: "",
+      tags,
     });
     alert(t("admin.approveSuccess"));
     await loadPendingProfiles();
@@ -208,6 +251,7 @@ async function changePage(nextPage: number) {
                 <th class="admin-table__header-cell">{{ t("admin.nickname") }}</th>
                 <th class="admin-table__header-cell">{{ t("admin.phone") }}</th>
                 <th class="admin-table__header-cell">{{ t("admin.idCard") }}</th>
+                <th class="admin-table__header-cell">{{ t("admin.tags") }}</th>
                 <th class="admin-table__header-cell">{{ t("admin.appliedAt") }}</th>
                 <th class="admin-table__header-cell">{{ t("admin.actions") }}</th>
               </tr>
@@ -220,6 +264,29 @@ async function changePage(nextPage: number) {
                 <td class="admin-table__cell">{{ profile.user.phone }}</td>
                 <td class="admin-table__id-cell">
                   {{ maskIdCard(profile.idCardNo) }}
+                </td>
+                <td class="admin-table__tags-cell">
+                  <div class="admin-tags">
+                    <div v-if="profile.tags.length > 0" class="admin-tags__submitted">
+                      <span
+                        v-for="tag in profile.tags"
+                        :key="tag"
+                        class="admin-tag"
+                      >
+                        {{ tag }}
+                      </span>
+                    </div>
+                    <input
+                      v-model="tagDrafts[profile.id]"
+                      type="text"
+                      class="admin-tags__input"
+                      :placeholder="t('admin.tagsPlaceholder')"
+                      @input="tagErrors[profile.id] = ''"
+                    />
+                    <p v-if="tagErrors[profile.id]" class="admin-field__error">
+                      {{ tagErrors[profile.id] }}
+                    </p>
+                  </div>
                 </td>
                 <td class="admin-table__cell">
                   {{ formatDate(profile.createdAt) }}
@@ -359,7 +426,7 @@ async function changePage(nextPage: number) {
 }
 
 .admin-table {
-  @apply w-full min-w-[760px] border-collapse text-left text-sm;
+  @apply w-full min-w-[960px] border-collapse text-left text-sm;
 }
 
 .admin-table__head {
@@ -388,6 +455,26 @@ async function changePage(nextPage: number) {
 
 .admin-table__id-cell {
   @apply px-5 py-4 font-mono text-slate-600;
+}
+
+.admin-table__tags-cell {
+  @apply w-72 px-5 py-4 align-top;
+}
+
+.admin-tags {
+  @apply space-y-2;
+}
+
+.admin-tags__submitted {
+  @apply flex flex-wrap gap-1.5;
+}
+
+.admin-tag {
+  @apply inline-flex max-w-full rounded-full bg-teal-50 px-2.5 py-1 text-xs font-medium text-teal-700;
+}
+
+.admin-tags__input {
+  @apply w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100;
 }
 
 .admin-table__action-cell {

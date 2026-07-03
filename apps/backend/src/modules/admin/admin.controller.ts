@@ -10,6 +10,10 @@ import {
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import type {
+  AdminEscortProfileResponse,
+  PendingEscortProfilesResponse,
+} from './types/admin-response.types';
 import { AdminService } from './admin.service';
 import { AdminOrdersQueryDto } from './dto/admin-orders-query.dto';
 import { PendingEscortProfilesQueryDto } from './dto/pending-escort-profiles-query.dto';
@@ -37,7 +41,9 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized or login expired.' })
   @ApiResponse({ status: 403, description: 'Admin role required.' })
   @Get('escort-profiles/pending')
-  getPendingEscortProfiles(@Query() query: PendingEscortProfilesQueryDto) {
+  getPendingEscortProfiles(
+    @Query() query: PendingEscortProfilesQueryDto,
+  ): Promise<PendingEscortProfilesResponse> {
     return this.adminService.getPendingEscortProfiles(query);
   }
 
@@ -56,7 +62,7 @@ export class AdminController {
   reviewEscortProfile(
     @Param('profileId') profileId: string,
     @Body() dto: ReviewEscortProfileDto,
-  ) {
+  ): Promise<AdminEscortProfileResponse> {
     return this.adminService.reviewEscortProfile(profileId, dto);
   }
 }

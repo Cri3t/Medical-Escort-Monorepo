@@ -8,6 +8,7 @@ export interface PendingEscortProfile {
   id: string;
   userId: string;
   idCardNo: string;
+  tags: string[];
   status: EscortProfileStatus;
   createdAt: string;
   updatedAt: string;
@@ -27,6 +28,7 @@ export interface PendingEscortProfilePage {
 
 export interface ReviewEscortProfilePayload {
   action: ReviewAction;
+  tags?: string[];
   reason?: string;
 }
 

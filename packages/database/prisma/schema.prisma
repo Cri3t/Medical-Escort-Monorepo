@@ -86,6 +86,9 @@ model EscortProfile {
   /// 身份证号
   idCardNo String @unique @db.VarChar(32)
 
+  /// 服务能力标签，运行时结构为 string[]
+  tags Json @default("[]")
+
   /// 审核通过标志
   isVerified Boolean @default(false)
 

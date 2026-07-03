@@ -73,6 +73,16 @@ function getEscortName(escort: PublicEscortProfile) {
         </div>
       </div>
 
+      <div v-if="escort.tags.length > 0" class="book-escort-card__tags">
+        <span
+          v-for="tag in escort.tags"
+          :key="tag"
+          class="book-escort-card__tag"
+        >
+          {{ tag }}
+        </span>
+      </div>
+
       <Button
         type="button"
         class="book-card-button"
@@ -135,6 +145,14 @@ function getEscortName(escort: PublicEscortProfile) {
 
 .book-escort-card__meta {
   @apply mt-1 text-sm text-slate-500;
+}
+
+.book-escort-card__tags {
+  @apply mt-5 flex min-h-7 flex-wrap gap-2;
+}
+
+.book-escort-card__tag {
+  @apply inline-flex max-w-full rounded-full bg-teal-50 px-2.5 py-1 text-xs font-medium text-teal-700;
 }
 
 .book-card-button {
